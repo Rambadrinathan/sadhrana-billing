@@ -95,7 +95,7 @@ export default function HomePage() {
               History
             </Link>
             <button className="btn btn-ghost" type="button" onClick={logout}>
-              Lock
+              Logout
             </button>
           </>
         }

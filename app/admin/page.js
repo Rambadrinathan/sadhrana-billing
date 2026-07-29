@@ -13,10 +13,11 @@ function todayIst() {
 
 export default function AdminDashboard() {
   const router = useRouter();
-  const [tab, setTab] = useState("invoices"); // invoices | reports | catalog | dayend
+  const [tab, setTab] = useState("invoices"); // invoices | reports | catalog | dayend | staff
   const [bills, setBills] = useState([]);
   const [status, setStatus] = useState("");
   const [search, setSearch] = useState("");
+  const [staffFilter, setStaffFilter] = useState("");
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState(null);
   const [from, setFrom] = useState("");
@@ -25,6 +26,11 @@ export default function AdminDashboard() {
   const [catBusy, setCatBusy] = useState(false);
   const [catMsg, setCatMsg] = useState("");
   const [editItem, setEditItem] = useState(null);
+  const [staffRoster, setStaffRoster] = useState([]);
+  const [staffBusy, setStaffBusy] = useState(false);
+  const [staffMsg, setStaffMsg] = useState("");
+  const [newStaff, setNewStaff] = useState({ name: "", phone: "" });
+  const [editStaff, setEditStaff] = useState(null);
   const [newItem, setNewItem] = useState({
     name: "",
     category: "fnb",
@@ -40,6 +46,7 @@ export default function AdminDashboard() {
       const params = new URLSearchParams({ limit: "200" });
       if (status) params.set("status", status);
       if (search.trim()) params.set("q", search.trim());
+      if (staffFilter) params.set("created_by", staffFilter);
       try {
         const res = await fetch(`/api/bills?${params}`);
         const data = await res.json();
@@ -54,7 +61,15 @@ export default function AdminDashboard() {
       cancelled = true;
       clearTimeout(t);
     };
-  }, [status, search]);
+  }, [status, search, staffFilter]);
+
+  useEffect(() => {
+    // Active staff for filter chips + full roster when on Staff tab
+    fetch(tab === "staff" ? "/api/staff?all=1" : "/api/staff")
+      .then((r) => r.json())
+      .then((d) => setStaffRoster(d.staff || []))
+      .catch(() => setStaffRoster([]));
+  }, [tab]);
 
   useEffect(() => {
     if (tab !== "catalog") return;
@@ -197,11 +212,60 @@ export default function AdminDashboard() {
     }
   }
 
+  async function saveStaff(item) {
+    setStaffBusy(true);
+    setStaffMsg("");
+    try {
+      const res = await fetch("/api/staff", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(item),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Save failed");
+      setStaffMsg("Staff saved.");
+      setEditStaff(null);
+      setNewStaff({ name: "", phone: "" });
+      const list = await fetch("/api/staff?all=1").then((r) => r.json());
+      setStaffRoster(list.staff || []);
+    } catch (e) {
+      setStaffMsg(e.message);
+    } finally {
+      setStaffBusy(false);
+    }
+  }
+
+  async function deactivateStaffMember(id) {
+    if (!confirm("Remove this staff from the active list?")) return;
+    setStaffBusy(true);
+    try {
+      const res = await fetch(`/api/staff?id=${id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed");
+      setStaffRoster((s) => s.map((x) => (x.id === id ? { ...x, active: false } : x)));
+    } catch (e) {
+      setStaffMsg(e.message);
+    } finally {
+      setStaffBusy(false);
+    }
+  }
+
+  const activeStaffNames = useMemo(() => {
+    const names = new Set(
+      (staffRoster || []).filter((s) => s.active !== false).map((s) => s.name)
+    );
+    // also include names seen on bills (historical)
+    for (const b of bills) {
+      if (b.created_by) names.add(b.created_by);
+    }
+    return [...names].sort((a, b) => a.localeCompare(b));
+  }, [staffRoster, bills]);
+
   return (
     <div className="app-shell" style={{ maxWidth: 720 }}>
       <BrandHeader
         title="Owner dashboard"
-        subtitle="Invoices · menu · reports · day-end"
+        subtitle="Invoices · staff · menu · reports · day-end"
         homeHref="/admin"
         right={
           <>
@@ -209,7 +273,7 @@ export default function AdminDashboard() {
               Staff
             </Link>
             <button className="btn btn-ghost" type="button" onClick={logout}>
-              Lock
+              Logout
             </button>
           </>
         }
@@ -222,6 +286,7 @@ export default function AdminDashboard() {
             ["reports", "Reports"],
             ["dayend", "Day-end"],
             ["catalog", "Menu"],
+            ["staff", "Staff"],
           ].map(([key, label]) => (
             <button
               key={key}
@@ -561,15 +626,188 @@ export default function AdminDashboard() {
           </div>
         ) : null}
 
+        {tab === "staff" ? (
+          <div className="card">
+            <strong>Staff roster</strong>
+            <p className="muted" style={{ fontSize: "0.88rem", margin: "6px 0 12px" }}>
+              Add shift staff (e.g. Ravi, Vijay). Name + phone. Every invoice picks who created it;
+              filter invoices by staff on the Invoices tab.
+            </p>
+            {staffMsg ? (
+              <p className="muted" style={{ fontSize: "0.85rem" }}>
+                {staffMsg}
+              </p>
+            ) : null}
+
+            <div className="card" style={{ background: "var(--green-soft)", marginBottom: 14 }}>
+              <strong style={{ fontSize: "0.9rem" }}>Add staff</strong>
+              <div className="field" style={{ marginTop: 8 }}>
+                <label>Name *</label>
+                <input
+                  value={newStaff.name}
+                  onChange={(e) => setNewStaff({ ...newStaff, name: e.target.value })}
+                  placeholder="Ravi"
+                />
+              </div>
+              <div className="field">
+                <label>Phone / WhatsApp number</label>
+                <input
+                  value={newStaff.phone}
+                  onChange={(e) => setNewStaff({ ...newStaff, phone: e.target.value })}
+                  placeholder="98xxxxxxxx"
+                  inputMode="tel"
+                />
+              </div>
+              <button
+                className="btn btn-primary"
+                type="button"
+                disabled={staffBusy || !newStaff.name.trim()}
+                onClick={() =>
+                  saveStaff({
+                    name: newStaff.name.trim(),
+                    phone: newStaff.phone.trim() || null,
+                    sort_order: (staffRoster.length + 1) * 10,
+                    active: true,
+                  })
+                }
+              >
+                Add staff
+              </button>
+            </div>
+
+            {staffRoster.length === 0 ? (
+              <p className="muted">No staff yet. Add Ravi, Vijay, etc. above.</p>
+            ) : (
+              staffRoster.map((s) => (
+                <div
+                  key={s.id}
+                  style={{
+                    borderBottom: "1px solid var(--line)",
+                    padding: "12px 0",
+                    opacity: s.active === false ? 0.5 : 1,
+                  }}
+                >
+                  {editStaff?.id === s.id ? (
+                    <div>
+                      <div className="field">
+                        <label>Name</label>
+                        <input
+                          value={editStaff.name}
+                          onChange={(e) =>
+                            setEditStaff({ ...editStaff, name: e.target.value })
+                          }
+                        />
+                      </div>
+                      <div className="field">
+                        <label>Phone</label>
+                        <input
+                          value={editStaff.phone || ""}
+                          onChange={(e) =>
+                            setEditStaff({ ...editStaff, phone: e.target.value })
+                          }
+                        />
+                      </div>
+                      <div className="row">
+                        <button
+                          className="btn btn-primary"
+                          type="button"
+                          disabled={staffBusy}
+                          onClick={() =>
+                            saveStaff({
+                              id: editStaff.id,
+                              name: editStaff.name,
+                              phone: editStaff.phone,
+                              sort_order: editStaff.sort_order,
+                              active: true,
+                            })
+                          }
+                        >
+                          Save
+                        </button>
+                        <button
+                          className="btn btn-ghost"
+                          type="button"
+                          onClick={() => setEditStaff(null)}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        gap: 8,
+                        alignItems: "center",
+                      }}
+                    >
+                      <div>
+                        <div style={{ fontWeight: 700 }}>
+                          {s.name}
+                          {s.active === false ? " (inactive)" : ""}
+                        </div>
+                        <div className="muted" style={{ fontSize: "0.85rem" }}>
+                          {s.phone || "No phone"}
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", gap: 6 }}>
+                        <button
+                          className="btn btn-ghost"
+                          type="button"
+                          style={{ minHeight: 36 }}
+                          onClick={() => setEditStaff({ ...s })}
+                        >
+                          Edit
+                        </button>
+                        {s.active !== false ? (
+                          <button
+                            className="btn btn-ghost"
+                            type="button"
+                            style={{ minHeight: 36 }}
+                            disabled={staffBusy}
+                            onClick={() => deactivateStaffMember(s.id)}
+                          >
+                            Off
+                          </button>
+                        ) : null}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        ) : null}
+
         {tab === "invoices" ? (
           <>
             <input
               className="search-input"
               type="search"
-              placeholder="Search bill no or guest name…"
+              placeholder="Search bill no, guest, or staff…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
+            <div className="chip-row">
+              <button
+                type="button"
+                className={`chip ${staffFilter === "" ? "active" : ""}`}
+                onClick={() => setStaffFilter("")}
+              >
+                All staff
+              </button>
+              {activeStaffNames.map((name) => (
+                <button
+                  key={name}
+                  type="button"
+                  className={`chip ${staffFilter === name ? "active" : ""}`}
+                  onClick={() => setStaffFilter(name)}
+                >
+                  {name}
+                </button>
+              ))}
+            </div>
             <div className="chip-row">
               {[
                 ["", "All"],
@@ -621,7 +859,14 @@ export default function AdminDashboard() {
                         <div className="muted" style={{ fontSize: "0.88rem" }}>
                           {b.bill_date} · {b.guest_name} · {b.villa}
                           {b.gst_applied === false ? " · No GST" : " · GST"}
-                          {b.created_by ? ` · ${b.created_by}` : ""}
+                          {b.created_by ? (
+                            <strong style={{ color: "var(--green-dark)" }}>
+                              {" "}
+                              · Staff: {b.created_by}
+                            </strong>
+                          ) : (
+                            " · Staff: —"
+                          )}
                           {b.payment_mode
                             ? ` · ${String(b.payment_mode).toUpperCase()}`
                             : ""}

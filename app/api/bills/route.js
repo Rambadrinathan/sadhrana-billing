@@ -48,8 +48,9 @@ export async function GET(request) {
     const date = searchParams.get("date");
     const status = searchParams.get("status");
     const q = searchParams.get("q") || searchParams.get("search") || "";
+    const created_by = searchParams.get("created_by") || "";
     const limit = Number(searchParams.get("limit") || 50);
-    const bills = await listBills({ date, status, limit, q });
+    const bills = await listBills({ date, status, limit, q, created_by });
     return Response.json({ bills });
   } catch (e) {
     return Response.json({ error: e.message }, { status: 500 });

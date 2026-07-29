@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PROPERTY } from "@/lib/config";
 
@@ -9,8 +9,22 @@ export default function LoginPage() {
   const [pin, setPin] = useState("");
   const [name, setName] = useState("");
   const [role, setRole] = useState("staff");
+  const [staffList, setStaffList] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/staff")
+      .then((r) => r.json())
+      .then((d) => setStaffList(d.staff || []))
+      .catch(() => setStaffList([]));
+    try {
+      const saved = localStorage.getItem("sb_staff_name") || "";
+      if (saved) setName(saved);
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   async function submit(e) {
     e.preventDefault();
@@ -54,20 +68,20 @@ export default function LoginPage() {
         <img
           src="/logo.png"
           alt={PROPERTY.tradeName || PROPERTY.name}
-          width={96}
-          height={96}
+          width={88}
+          height={88}
           style={{
-            width: 96,
-            height: 96,
+            width: 88,
+            height: 88,
             objectFit: "contain",
             borderRadius: "50%",
-            marginBottom: 10,
-            border: "2px solid var(--green)",
+            marginBottom: 12,
+            border: "1px solid var(--line)",
             background: "#fff",
-            boxShadow: "0 4px 16px rgba(47,93,58,0.12)",
+            boxShadow: "0 2px 12px rgba(36,48,40,0.06)",
           }}
         />
-        <h1 style={{ color: "var(--green-dark)" }}>
+        <h1 style={{ color: "var(--green-dark)", fontWeight: 750 }}>
           {PROPERTY.tradeName || PROPERTY.name}
         </h1>
         <p>Billing portal · Staff &amp; owner</p>
@@ -90,16 +104,35 @@ export default function LoginPage() {
           </button>
         </div>
 
-        <input
-          type="text"
-          className="search-input"
-          style={{ marginBottom: 10, textAlign: "center", letterSpacing: 0 }}
-          placeholder={role === "admin" ? "Your name (optional)" : "Your name (for bill history)"}
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          autoComplete="name"
-          maxLength={40}
-        />
+        {role === "staff" && staffList.length > 0 ? (
+          <select
+            className="search-input"
+            style={{ marginBottom: 10, textAlign: "left" }}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          >
+            <option value="">Who is logging in?…</option>
+            {staffList.map((s) => (
+              <option key={s.id} value={s.name}>
+                {s.name}
+                {s.phone ? ` · ${s.phone}` : ""}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <input
+            type="text"
+            className="search-input"
+            style={{ marginBottom: 10, textAlign: "center", letterSpacing: 0 }}
+            placeholder={
+              role === "admin" ? "Your name (optional)" : "Your name (for bills)"
+            }
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            autoComplete="name"
+            maxLength={40}
+          />
+        )}
 
         <input
           className="pin-input"
@@ -118,8 +151,8 @@ export default function LoginPage() {
         </button>
         <p className="muted" style={{ marginTop: 14, fontSize: "0.8rem" }}>
           {role === "admin"
-            ? "Invoices, catalog, reports, Excel & day-end"
-            : "Create checkout bills · share · collect"}
+            ? "Invoices, staff, menu, reports & day-end"
+            : "Create bills · pick your name on each invoice"}
         </p>
       </form>
     </div>

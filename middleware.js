@@ -14,11 +14,16 @@ export function middleware(request) {
       pathname.endsWith("/edit") ||
       pathname.endsWith("/email"));
 
+  // Staff list is readable by authenticated app; GET without auth for login picker optional
+  const publicStaffGet =
+    pathname === "/api/staff" && request.method === "GET";
+
   if (
     pathname.startsWith("/login") ||
     pathname.startsWith("/api/login") ||
     pathname.startsWith("/api/telegram") ||
     publicBillApi ||
+    publicStaffGet ||
     pathname.startsWith("/b/") ||
     pathname.startsWith("/invoice/") ||
     pathname.startsWith("/_next") ||

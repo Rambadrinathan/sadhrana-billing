@@ -16,6 +16,7 @@ export default function NewBillPage() {
   const [guestEmail, setGuestEmail] = useState("");
   const [notes, setNotes] = useState("");
   const [advance, setAdvance] = useState("");
+  const [staffList, setStaffList] = useState([]);
   const [staffName, setStaffName] = useState("");
   const [qtyMap, setQtyMap] = useState({});
   const [customDesc, setCustomDesc] = useState("");
@@ -25,17 +26,34 @@ export default function NewBillPage() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
+    let saved = "";
     try {
-      setStaffName(localStorage.getItem("sb_staff_name") || "");
+      saved = localStorage.getItem("sb_staff_name") || "";
     } catch {
       /* ignore */
     }
     fetch("/api/login")
       .then((r) => r.json())
       .then((d) => {
-        if (d.name) setStaffName(d.name);
+        if (d.name) saved = d.name || saved;
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => {
+        fetch("/api/staff")
+          .then((r) => r.json())
+          .then((d) => {
+            const list = d.staff || [];
+            setStaffList(list);
+            if (saved && list.some((s) => s.name === saved)) {
+              setStaffName(saved);
+            } else if (list.length === 1) {
+              setStaffName(list[0].name);
+            } else if (saved) {
+              setStaffName(saved);
+            }
+          })
+          .catch(() => setStaffList([]));
+      });
     fetch("/api/catalog")
       .then((r) => r.json())
       .then((d) => setCatalog(d.items || []))
@@ -104,6 +122,10 @@ export default function NewBillPage() {
 
   async function createBill() {
     setError("");
+    if (!staffName.trim()) {
+      setError("Select which staff is creating this bill");
+      return;
+    }
     if (!guestName.trim()) {
       setError("Enter guest name");
       return;
@@ -114,6 +136,11 @@ export default function NewBillPage() {
     }
     setSaving(true);
     try {
+      try {
+        localStorage.setItem("sb_staff_name", staffName.trim());
+      } catch {
+        /* ignore */
+      }
       const res = await fetch("/api/bills", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -124,7 +151,7 @@ export default function NewBillPage() {
           guest_email: guestEmail.trim() || null,
           notes: notes.trim() || null,
           lines: selectedLines,
-          created_by: staffName.trim() || null,
+          created_by: staffName.trim(),
           amount_paid: Number(advance) > 0 ? Number(advance) : 0,
         }),
       });
@@ -163,6 +190,27 @@ export default function NewBillPage() {
         {error ? <div className="error">{error}</div> : null}
 
         <div className="card">
+          <div className="field">
+            <label>Staff creating this bill *</label>
+            <select
+              value={staffName}
+              onChange={(e) => setStaffName(e.target.value)}
+              required
+            >
+              <option value="">Select staff…</option>
+              {staffList.map((s) => (
+                <option key={s.id} value={s.name}>
+                  {s.name}
+                  {s.phone ? ` · ${s.phone}` : ""}
+                </option>
+              ))}
+            </select>
+            {staffList.length === 0 ? (
+              <p className="muted" style={{ fontSize: "0.8rem", margin: "4px 0 0" }}>
+                Owner must add staff under Admin → Staff first.
+              </p>
+            ) : null}
+          </div>
           <div className="field">
             <label>Villa</label>
             <select value={villa} onChange={(e) => setVilla(e.target.value)}>
