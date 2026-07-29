@@ -7,9 +7,10 @@ import { PROPERTY } from "@/lib/config";
 export default function LoginPage() {
   const router = useRouter();
   const [pin, setPin] = useState("");
-  const [name, setName] = useState("");
   const [role, setRole] = useState("staff");
   const [staffList, setStaffList] = useState([]);
+  const [staffPick, setStaffPick] = useState("");
+  const [staffOther, setStaffOther] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -20,21 +21,51 @@ export default function LoginPage() {
       .catch(() => setStaffList([]));
     try {
       const saved = localStorage.getItem("sb_staff_name") || "";
-      if (saved) setName(saved);
+      if (!saved) return;
+      // Will resolve after staff list loads — set other for now
+      setStaffOther(saved);
     } catch {
       /* ignore */
     }
   }, []);
 
+  useEffect(() => {
+    if (!staffList.length) return;
+    try {
+      const saved = localStorage.getItem("sb_staff_name") || "";
+      if (!saved) return;
+      if (staffList.some((s) => s.name === saved)) {
+        setStaffPick(saved);
+        setStaffOther("");
+      } else {
+        setStaffPick("__others__");
+        setStaffOther(saved);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, [staffList]);
+
+  function resolvedName() {
+    if (role === "admin") {
+      return staffPick === "__others__"
+        ? staffOther.trim()
+        : staffPick || staffOther.trim();
+    }
+    if (staffPick === "__others__") return staffOther.trim();
+    return String(staffPick || "").trim();
+  }
+
   async function submit(e) {
     e.preventDefault();
     setLoading(true);
     setError("");
+    const name = resolvedName();
     try {
       const res = await fetch("/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pin, role, name: name.trim() }),
+        body: JSON.stringify({ pin, role, name }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -42,9 +73,9 @@ export default function LoginPage() {
         setLoading(false);
         return;
       }
-      if (name.trim()) {
+      if (name) {
         try {
-          localStorage.setItem("sb_staff_name", name.trim());
+          localStorage.setItem("sb_staff_name", name);
         } catch {
           /* ignore */
         }
@@ -104,31 +135,46 @@ export default function LoginPage() {
           </button>
         </div>
 
-        {role === "staff" && staffList.length > 0 ? (
-          <select
-            className="search-input"
-            style={{ marginBottom: 10, textAlign: "left" }}
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          >
-            <option value="">Who is logging in?…</option>
-            {staffList.map((s) => (
-              <option key={s.id} value={s.name}>
-                {s.name}
-                {s.phone ? ` · ${s.phone}` : ""}
-              </option>
-            ))}
-          </select>
+        {role === "staff" ? (
+          <>
+            <select
+              className="search-input"
+              style={{ marginBottom: 10, textAlign: "left" }}
+              value={staffPick}
+              onChange={(e) => setStaffPick(e.target.value)}
+            >
+              <option value="">Who is logging in?…</option>
+              {staffList.map((s) => (
+                <option key={s.id} value={s.name}>
+                  {s.name}
+                  {s.phone ? ` · ${s.phone}` : ""}
+                </option>
+              ))}
+              <option value="__others__">Others (type name)…</option>
+            </select>
+            {staffPick === "__others__" ? (
+              <input
+                type="text"
+                className="search-input"
+                style={{ marginBottom: 10, textAlign: "center", letterSpacing: 0 }}
+                placeholder="Type your name"
+                value={staffOther}
+                onChange={(e) => setStaffOther(e.target.value)}
+                maxLength={40}
+              />
+            ) : null}
+          </>
         ) : (
           <input
             type="text"
             className="search-input"
             style={{ marginBottom: 10, textAlign: "center", letterSpacing: 0 }}
-            placeholder={
-              role === "admin" ? "Your name (optional)" : "Your name (for bills)"
-            }
-            value={name}
-            onChange={(e) => setName(e.target.value)}
+            placeholder="Your name (optional)"
+            value={staffOther || staffPick}
+            onChange={(e) => {
+              setStaffPick("__others__");
+              setStaffOther(e.target.value);
+            }}
             autoComplete="name"
             maxLength={40}
           />
@@ -152,7 +198,7 @@ export default function LoginPage() {
         <p className="muted" style={{ marginTop: 14, fontSize: "0.8rem" }}>
           {role === "admin"
             ? "Invoices, staff, menu, reports & day-end"
-            : "Create bills · pick your name on each invoice"}
+            : "New people? Choose Others and type their name."}
         </p>
       </form>
     </div>

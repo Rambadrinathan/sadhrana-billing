@@ -17,7 +17,9 @@ export default function NewBillPage() {
   const [notes, setNotes] = useState("");
   const [advance, setAdvance] = useState("");
   const [staffList, setStaffList] = useState([]);
-  const [staffName, setStaffName] = useState("");
+  /** Roster name, or "__others__" for free-typed person */
+  const [staffPick, setStaffPick] = useState("");
+  const [staffOther, setStaffOther] = useState("");
   const [qtyMap, setQtyMap] = useState({});
   const [customDesc, setCustomDesc] = useState("");
   const [customRate, setCustomRate] = useState("");
@@ -45,11 +47,13 @@ export default function NewBillPage() {
             const list = d.staff || [];
             setStaffList(list);
             if (saved && list.some((s) => s.name === saved)) {
-              setStaffName(saved);
+              setStaffPick(saved);
             } else if (list.length === 1) {
-              setStaffName(list[0].name);
+              setStaffPick(list[0].name);
             } else if (saved) {
-              setStaffName(saved);
+              // Was a free-typed "other" name last time
+              setStaffPick("__others__");
+              setStaffOther(saved);
             }
           })
           .catch(() => setStaffList([]));
@@ -122,8 +126,16 @@ export default function NewBillPage() {
 
   async function createBill() {
     setError("");
-    if (!staffName.trim()) {
-      setError("Select which staff is creating this bill");
+    const resolvedStaff =
+      staffPick === "__others__"
+        ? staffOther.trim()
+        : String(staffPick || "").trim();
+    if (!resolvedStaff) {
+      setError(
+        staffPick === "__others__"
+          ? "Enter the name of the person creating this bill"
+          : "Select which staff is creating this bill"
+      );
       return;
     }
     if (!guestName.trim()) {
@@ -137,7 +149,7 @@ export default function NewBillPage() {
     setSaving(true);
     try {
       try {
-        localStorage.setItem("sb_staff_name", staffName.trim());
+        localStorage.setItem("sb_staff_name", resolvedStaff);
       } catch {
         /* ignore */
       }
@@ -151,7 +163,7 @@ export default function NewBillPage() {
           guest_email: guestEmail.trim() || null,
           notes: notes.trim() || null,
           lines: selectedLines,
-          created_by: staffName.trim(),
+          created_by: resolvedStaff,
           amount_paid: Number(advance) > 0 ? Number(advance) : 0,
         }),
       });
@@ -178,7 +190,13 @@ export default function NewBillPage() {
     <div className="app-shell">
       <BrandHeader
         title="New checkout bill"
-        subtitle={staffName ? `Staff: ${staffName}` : "F&B · massage · bonfire"}
+        subtitle={
+          staffPick === "__others__" && staffOther.trim()
+            ? `Staff: ${staffOther.trim()}`
+            : staffPick && staffPick !== "__others__"
+              ? `Staff: ${staffPick}`
+              : "F&B · massage · bonfire"
+        }
         right={
           <Link href="/" className="btn btn-ghost">
             Cancel
@@ -193,8 +211,8 @@ export default function NewBillPage() {
           <div className="field">
             <label>Staff creating this bill *</label>
             <select
-              value={staffName}
-              onChange={(e) => setStaffName(e.target.value)}
+              value={staffPick}
+              onChange={(e) => setStaffPick(e.target.value)}
               required
             >
               <option value="">Select staff…</option>
@@ -204,12 +222,26 @@ export default function NewBillPage() {
                   {s.phone ? ` · ${s.phone}` : ""}
                 </option>
               ))}
+              <option value="__others__">Others (not on list)…</option>
             </select>
+            {staffPick === "__others__" ? (
+              <input
+                style={{ marginTop: 8 }}
+                value={staffOther}
+                onChange={(e) => setStaffOther(e.target.value)}
+                placeholder="Type their name (e.g. temp staff)"
+                autoComplete="name"
+              />
+            ) : null}
             {staffList.length === 0 ? (
               <p className="muted" style={{ fontSize: "0.8rem", margin: "4px 0 0" }}>
-                Owner must add staff under Admin → Staff first.
+                No roster yet — choose Others and type a name, or add people under Admin → Staff.
               </p>
-            ) : null}
+            ) : (
+              <p className="muted" style={{ fontSize: "0.8rem", margin: "4px 0 0" }}>
+                New person not on the list? Choose <strong>Others</strong> and type their name.
+              </p>
+            )}
           </div>
           <div className="field">
             <label>Villa</label>
