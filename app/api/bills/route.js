@@ -1,60 +1,55 @@
-import { getSupabase, isSupabaseConfigured } from "@/lib/supabase";
+import {
+  createBill,
+  getCatalog,
+  listBills,
+  matchCatalogItem,
+} from "@/lib/bills";
+import { PROPERTY } from "@/lib/config";
 
 export const dynamic = "force-dynamic";
 
-function computeTotals(lines) {
-  let subtotal = 0;
-  let tax_total = 0;
-  const computed = lines.map((line, i) => {
-    const qty = Number(line.qty) || 0;
-    const rate = Number(line.rate_inr) || 0;
-    const gst = Number(line.gst_pct) || 0;
-    const base = qty * rate;
-    const tax = (base * gst) / 100;
-    subtotal += base;
-    tax_total += tax;
+/** Lock rates to official menu when description matches catalog. */
+async function enforceMenuRates(rawLines) {
+  const catalog = await getCatalog();
+  return (rawLines || []).map((l) => {
+    const matched =
+      (l.catalog_item_id && catalog.find((c) => c.id === l.catalog_item_id)) ||
+      matchCatalogItem(l.description, catalog);
+
+    if (matched) {
+      return {
+        catalog_item_id: matched.id,
+        description: matched.name,
+        category: matched.category,
+        qty: Number(l.qty) || 1,
+        rate_inr: Number(matched.rate_inr),
+        gst_pct: Number(matched.gst_pct) || PROPERTY.defaultGstPct,
+      };
+    }
+
     return {
-      catalog_item_id: line.catalog_item_id || null,
-      description: line.description,
-      category: line.category || "other",
-      qty,
-      rate_inr: rate,
-      gst_pct: gst,
-      line_total: Math.round((base + tax) * 100) / 100,
-      sort_order: i,
+      catalog_item_id: null,
+      description: String(l.description || "Item").trim(),
+      category: l.category || "other",
+      qty: Number(l.qty) || 1,
+      rate_inr: Number(l.rate_inr) || 0,
+      gst_pct:
+        Number(l.gst_pct) > 0 ? Number(l.gst_pct) : PROPERTY.defaultGstPct,
     };
   });
-  return {
-    lines: computed,
-    subtotal: Math.round(subtotal * 100) / 100,
-    tax_total: Math.round(tax_total * 100) / 100,
-    grand_total: Math.round((subtotal + tax_total) * 100) / 100,
-  };
 }
 
 export async function GET(request) {
-  const { searchParams } = new URL(request.url);
-  const date = searchParams.get("date");
-  const status = searchParams.get("status");
-  const limit = Number(searchParams.get("limit") || 50);
-
-  if (!isSupabaseConfigured()) {
-    return Response.json({ bills: [], demo: true });
+  try {
+    const { searchParams } = new URL(request.url);
+    const date = searchParams.get("date");
+    const status = searchParams.get("status");
+    const limit = Number(searchParams.get("limit") || 50);
+    const bills = await listBills({ date, status, limit });
+    return Response.json({ bills });
+  } catch (e) {
+    return Response.json({ error: e.message }, { status: 500 });
   }
-
-  const supabase = getSupabase();
-  let q = supabase
-    .from("bills")
-    .select("*, bill_lines(*)")
-    .order("created_at", { ascending: false })
-    .limit(limit);
-
-  if (date) q = q.eq("bill_date", date);
-  if (status) q = q.eq("status", status);
-
-  const { data, error } = await q;
-  if (error) return Response.json({ error: error.message }, { status: 500 });
-  return Response.json({ bills: data || [] });
 }
 
 export async function POST(request) {
@@ -73,72 +68,17 @@ export async function POST(request) {
       return Response.json({ error: "Add at least one item" }, { status: 400 });
     }
 
-    const { lines, subtotal, tax_total, grand_total } = computeTotals(rawLines);
-
-    if (!isSupabaseConfigured()) {
-      const demoBill = {
-        id: "demo-" + Date.now(),
-        bill_no: "SB-DEMO-" + String(Date.now()).slice(-4),
-        bill_date: new Date().toISOString().slice(0, 10),
-        villa,
-        guest_name,
-        guest_phone,
-        notes,
-        subtotal,
-        tax_total,
-        grand_total,
-        status: "unpaid",
-        payment_mode: null,
-        paid_at: null,
-        bill_lines: lines.map((l, i) => ({ ...l, id: "dl-" + i })),
-        demo: true,
-      };
-      return Response.json({ bill: demoBill, demo: true });
-    }
-
-    const supabase = getSupabase();
-
-    const { data: billNoData, error: billNoErr } = await supabase.rpc("next_bill_no");
-    if (billNoErr) {
-      return Response.json({ error: "Could not allocate bill number: " + billNoErr.message }, { status: 500 });
-    }
-
-    const bill_no = billNoData;
-
-    const { data: bill, error: billErr } = await supabase
-      .from("bills")
-      .insert({
-        bill_no,
-        villa,
-        guest_name,
-        guest_phone,
-        notes,
-        subtotal,
-        tax_total,
-        grand_total,
-        status: "unpaid",
-      })
-      .select()
-      .single();
-
-    if (billErr) {
-      return Response.json({ error: billErr.message }, { status: 500 });
-    }
-
-    const lineRows = lines.map((l) => ({ ...l, bill_id: bill.id }));
-    const { data: savedLines, error: lineErr } = await supabase
-      .from("bill_lines")
-      .insert(lineRows)
-      .select();
-
-    if (lineErr) {
-      await supabase.from("bills").delete().eq("id", bill.id);
-      return Response.json({ error: lineErr.message }, { status: 500 });
-    }
-
-    return Response.json({
-      bill: { ...bill, bill_lines: savedLines || [] },
+    const lines = await enforceMenuRates(rawLines);
+    const bill = await createBill({
+      villa,
+      guest_name,
+      guest_phone,
+      notes,
+      lines,
+      source: body.source || "web",
     });
+
+    return Response.json({ bill });
   } catch (e) {
     return Response.json({ error: e.message || "Failed" }, { status: 500 });
   }
