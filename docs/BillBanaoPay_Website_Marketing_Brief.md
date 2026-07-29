@@ -22,7 +22,7 @@ Footer pattern: *BillBanaoPay by OmniDEL.ai*
 
 ## 1. One-line pitch
 
-**BillBanaoPay** lets small businesses create **professional invoices from Telegram or a photo of a handwritten slip** — with optional GST, stored PDFs, payment tracking, and an owner login to see collections.
+**BillBanaoPay** lets small businesses create **professional invoices from Telegram or a photo of a handwritten slip** — with optional GST, stored PDFs, **invoice version history**, an **owner Reports tab**, and **branded Excel export** of final billed amounts and GST.
 
 ---
 
@@ -63,15 +63,15 @@ Kirana + services counter, boutique shop, guest house extras desk, tuition centr
 2. Lines match the **business price list** (official rates).  
 3. Staff **choose GST ON or OFF** (5% as CGST 2.5% + SGST 2.5% when ON).  
 4. System issues a **professional invoice PDF** (logo, GSTIN when used, totals, paid status).  
-5. PDF is **stored**; edits keep **version history**.  
-6. **Owner / admin login** shows all invoices and payments received.
+5. PDF is **stored**; every edit keeps a **version history** (old lines, totals, and archived PDF) so you can see how a bill was adjusted.  
+6. **Owner / admin login** shows all invoices, payments, a **Reports** tab, and **one-click Excel export** (final billed, GST, by customer).
 
 ---
 
 ## 5. Positioning
 
 **For small businesses that need professional invoices without a full ERP,**  
-BillBanaoPay is the **Telegram-native billing tool** that turns slips into **shareable tax-ready invoices** with **GST on/off per bill** and an **owner dashboard for collections**.
+BillBanaoPay is the **Telegram-native billing tool** that turns slips into **shareable tax-ready invoices** with **GST on/off per bill**, **full edit history**, and an **owner dashboard with Excel reports**.
 
 ### Vs alternatives
 
@@ -115,16 +115,34 @@ BillBanaoPay is the **Telegram-native billing tool** that turns slips into **sha
 - Owner sees collected vs pending  
 
 ### F. Admin / owner portal
-- Secure PIN login (Owner / Admin)  
-- List of all invoices  
-- Filters: paid / unpaid / void  
-- Totals: collections and pending  
+- Secure PIN login (Owner / Admin) — **your business logo** on login and every portal screen  
+- **Invoices** tab: all bills, filters paid / unpaid / void  
+- **Version history** per invoice (expand any bill → see every prior version + archived PDF)  
+- Totals: collections, pending, GST component, final billed  
 - Open invoice or download PDF  
 
-### G. Corrections
+### G. Invoice version history (staff + owner)
+- Edit after issue (Telegram `/edit` or web)  
+- Previous snapshot archived: line items, subtotal, GST, grand total, PDF  
+- Staff and owner can open **Version history** on any invoice  
+- Know *what changed* and *when* — not just the latest total  
+- Marketing proof: “Never wonder how a bill got adjusted”  
+
+### H. Reports & Excel export (owner)
+- **Reports** tab on owner dashboard  
+- Date filters (from / to)  
+- On-screen snapshot: invoice count, taxable, GST, final billed, paid vs unpaid, count of edited invoices  
+- **Download Excel** — multi-sheet branded workbook:  
+  - **Summary** — final billed, GST component, collected, pending  
+  - **Invoices** — bill no, guest, GST flag, version, amounts, PDF link  
+  - **Line items** — item-level detail for CA / audit  
+  - **By customer** — per-guest totals + how many invoices were edited  
+- Green/gold branded headers (your business name on the file)  
+
+### I. Corrections workflow
 - Edit invoice after issue  
-- Previous version archived (history + old PDF)  
-- Re-issue PDF  
+- Re-issue PDF as new version  
+- Old PDF remains downloadable from history  
 
 ---
 
@@ -151,12 +169,18 @@ BillBanaoPay is the **Telegram-native billing tool** that turns slips into **sha
    Photo of handwritten pad → draft  
 
 5. **Owner login**  
-   Login screen: Staff vs Owner / Admin  
+   Login screen with **business logo**: Staff vs Owner / Admin  
 
-6. **Owner dashboard**  
-   Collected today, pending, list of invoices  
+6. **Owner dashboard — Invoices**  
+   Collected / pending / GST; list with “edited” badge; expand **Version history**  
 
-7. **Web invoice view**  
+7. **Owner dashboard — Reports**  
+   Date range + **Download Excel report** (summary + by customer)  
+
+8. **Version history panel**  
+   Current v2 total vs archived v1 lines + “Open archived PDF”  
+
+9. **Web invoice view**  
    Clean tax invoice / bill of supply layout  
 
 *(Actual screenshots to be captured from the live app using Cedar Nook demo data — or static mock frames in design.)*
@@ -180,10 +204,11 @@ BillBanaoPay is the **Telegram-native billing tool** that turns slips into **sha
 3. 3-step how it works  
 4. Feature proof (not industry silos)  
 5. GST ON/OFF callout  
-6. Owner dashboard  
-7. Sample invoice  
-8. FAQ preview  
-9. CTA  
+6. **Version history** callout (“see how bills were adjusted”)  
+7. Owner dashboard + **Reports / Excel**  
+8. Sample invoice  
+9. FAQ preview  
+10. CTA  
 
 ### Design
 - Palette: deep green `#2F5D3A`, paper `#F4F1EA`, ink `#1C2A1F`, accent gold `#B8892A`  
@@ -192,7 +217,7 @@ BillBanaoPay is the **Telegram-native billing tool** that turns slips into **sha
 
 ### Hero copy (recommended)
 **H1:** Professional invoices from a chat.  
-**Sub:** BillBanaoPay by OmniDEL.ai turns handwritten slips into formal invoices — with GST on or off, PDF storage, and an owner view of payments.  
+**Sub:** BillBanaoPay by OmniDEL.ai turns handwritten slips into formal invoices — with GST on or off, full edit history, PDF storage, and Excel reports for the owner.  
 **CTA:** Book a demo · **Secondary:** See sample invoice  
 
 ---
@@ -272,15 +297,24 @@ A: Securely in the cloud; each PDF is saved and linked to the invoice record.
 **Q: Can I edit after sending?**  
 A: Yes. Edits create a new version; older version is kept in history.
 
+**Q: Can staff and owner see how an invoice was changed?**  
+A: Yes. Open **Version history** on any invoice — each prior version shows lines, totals, change note, and the archived PDF. You can answer “how did this bill get adjusted?” without guessing.
+
 **Q: Can I get my data for my CA?**  
-A: Yes — invoice list, PDFs, and paid status support month-end accounting.
+A: Yes — **Reports → Download Excel** exports final billed amounts, GST, line items, and per-customer totals. Plus individual PDFs anytime.
 
 ### Owner / admin
 **Q: How do I see money received?**  
-A: Owner / Admin login shows collected (paid) vs pending, and every invoice.
+A: Owner / Admin login shows collected (paid) vs pending, GST component, and every invoice.
+
+**Q: Is there a Reports tab?**  
+A: Yes. Filter by date, see a snapshot (taxable, GST, final billed, paid/unpaid, edited count), and download a **branded multi-sheet Excel** (Summary · Invoices · Line items · By customer).
+
+**Q: Does the portal show my business logo?**  
+A: Yes. Login (staff and owner) and every portal header use your logo for brand prominence.
 
 **Q: Separate logins for staff and owner?**  
-A: Yes. Staff create bills; Owner sees all invoices and payments.
+A: Yes. Staff create bills and can open version history; Owner sees all invoices, payments, reports, and Excel export.
 
 **Q: Who can use the Telegram bot?**  
 A: Only allowlisted phone accounts you approve.
@@ -318,13 +352,13 @@ A: Product UI English; invoices are numeric and work for any language of busines
 
 ```
 Build a marketing site for BillBanaoPay by OmniDEL.ai (billbanaoppay.com).
-India-first SME billing: Telegram or photo → professional invoice PDF → optional GST 5% on/off per bill → owner dashboard for payments.
+India-first SME billing: Telegram or photo → professional invoice PDF → optional GST 5% on/off per bill → invoice version history (see adjustments) → owner Reports tab + branded Excel export (final billed, GST, by customer).
 Generic for any small shop/business — not limited to hotels.
 Demo fictional brand for screenshots: Cedar Nook Homestay (never use real client names).
 Tone: calm, concrete, owner-to-owner. Palette: #2F5D3A green, #F4F1EA paper, #1C2A1F ink, #B8892A gold.
 Pages: Home, How it works, Features, Pricing, FAQ, Sample invoice, Contact.
-Include full FAQ answering GST on/off, Telegram, OCR, admin login, storage, editing.
-Show UI mockups: Telegram draft with GST toggle, PDF invoice, owner dashboard.
+Include full FAQ: GST on/off, Telegram, OCR, admin login, version history, Excel reports, storage, editing.
+Show UI mockups: Telegram GST toggle, PDF invoice, owner dashboard, version history, Excel/reports.
 No AI slop, no fake social proof, no industry-only silos.
 ```
 
@@ -352,6 +386,44 @@ Fictional demo brand only: **Cedar Nook Homestay**.
 | `docs/screenshots/01-telegram-gst-picker.jpg` | Telegram draft + GST ON/OFF control |
 | `docs/screenshots/02-owner-dashboard.jpg` | Owner login view: collections + invoices |
 | `docs/screenshots/03-tax-invoice-pdf.jpg` | Professional tax invoice PDF |
+| *(capture next)* version-history panel | Archived v1 vs current v2 + open PDF |
+| *(capture next)* reports-excel | Reports tab + Excel download |
 
 Place these on How it works + Features + Sample invoice pages.
+
+---
+
+## 15. Basic features checklist (what we ship vs common SME gaps)
+
+### Shipped (core)
+- [x] Telegram free-text billing  
+- [x] Photo OCR → draft → confirm  
+- [x] Catalog / price list matching  
+- [x] GST ON/OFF per bill  
+- [x] Professional PDF + cloud storage  
+- [x] Business logo on PDF + portal login/header  
+- [x] Mark paid (UPI / cash / card)  
+- [x] Staff vs Owner PIN login  
+- [x] Invoice version history (staff + owner)  
+- [x] Owner Reports tab + branded Excel export  
+- [x] Void / edit / re-issue PDF  
+
+### Common SME basics — not yet / roadmap (honest)
+| Gap | Why owners ask | Priority |
+|-----|----------------|----------|
+| One-tap **WhatsApp share** of PDF | Guest wants bill on WhatsApp | High |
+| **UPI QR / pay link** on invoice | Collect faster | High |
+| **Search** by bill no / guest name | Find old bills fast | High |
+| **Catalog edit UI** in admin | Change rates without developer | High |
+| **Named staff** (who created bill) | Accountability | Medium |
+| **Partial payment / advance** | Real-world collections | Medium |
+| **HSN codes** on lines | Stricter GST invoices | Medium |
+| **Email** invoice to guest | Formal handoff | Medium |
+| **Day-end close** report | Counter cash match | Medium |
+| **WhatsApp bot** (not only Telegram) | Staff prefer WA | Medium |
+| Multi-outlet / multi-branch | Growth | Later |
+| Credit note document type | CA preference | Later |
+| Offline draft queue | Patchy network | Later |
+
+*Do not promise roadmap items on the marketing site unless shipping.*
 

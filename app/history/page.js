@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { formatInr } from "@/lib/config";
+import BrandHeader from "@/components/BrandHeader";
 
 export default function HistoryPage() {
   const [bills, setBills] = useState([]);
@@ -31,15 +32,15 @@ export default function HistoryPage() {
 
   return (
     <div className="app-shell">
-      <header className="topbar no-print">
-        <div>
-          <h1>Bill history</h1>
-          <p className="sub">All checkout extras</p>
-        </div>
-        <Link href="/" className="btn btn-ghost">
-          Home
-        </Link>
-      </header>
+      <BrandHeader
+        title="Bill history"
+        subtitle="All invoices · open for version history"
+        right={
+          <Link href="/" className="btn btn-ghost">
+            Home
+          </Link>
+        }
+      />
 
       <main className="page">
         <div className="chip-row">
@@ -70,9 +71,24 @@ export default function HistoryPage() {
               <Link key={b.id} href={`/bills/${b.id}`} className="bill-list-item">
                 <div className="bill-list-top">
                   <div>
-                    <div style={{ fontWeight: 700 }}>{b.guest_name}</div>
+                    <div style={{ fontWeight: 700 }}>
+                      {b.guest_name}
+                      {Number(b.version) > 1 ? (
+                        <span
+                          className="badge"
+                          style={{
+                            marginLeft: 6,
+                            background: "#e8f0fe",
+                            color: "#1a56db",
+                          }}
+                        >
+                          v{b.version}
+                        </span>
+                      ) : null}
+                    </div>
                     <div className="muted" style={{ fontSize: "0.88rem" }}>
                       {b.bill_date} · {b.villa} · {b.bill_no}
+                      {b.gst_applied === false ? " · No GST" : ""}
                     </div>
                   </div>
                   <div style={{ textAlign: "right" }}>

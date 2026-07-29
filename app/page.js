@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { PROPERTY, formatInr } from "@/lib/config";
+import BrandHeader from "@/components/BrandHeader";
 
 function todayIst() {
   return new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
@@ -54,22 +55,27 @@ export default function HomePage() {
 
   return (
     <div className="app-shell">
-      <header className="topbar no-print">
-        <div>
-          <h1>{PROPERTY.name}</h1>
-          <p className="sub">Checkout extras · {date}</p>
-        </div>
-        <button className="btn btn-ghost" type="button" onClick={logout}>
-          Lock
-        </button>
-      </header>
+      <BrandHeader
+        title="Staff checkout"
+        subtitle={`${date} · extras & F&B`}
+        right={
+          <>
+            <Link href="/history" className="btn btn-ghost">
+              History
+            </Link>
+            <button className="btn btn-ghost" type="button" onClick={logout}>
+              Lock
+            </button>
+          </>
+        }
+      />
 
       <main className="page">
         {demo ? (
           <div className="card" style={{ marginBottom: 12, background: "#fff8e8" }}>
             <strong>Demo mode</strong>
             <p className="muted" style={{ margin: "6px 0 0" }}>
-              Supabase not configured yet. You can still try New Bill; bills won’t persist until env is set.
+              Supabase not configured yet.
             </p>
           </div>
         ) : null}
@@ -109,6 +115,8 @@ export default function HomePage() {
                     <div style={{ fontWeight: 700 }}>{b.guest_name}</div>
                     <div className="muted" style={{ fontSize: "0.88rem" }}>
                       {b.villa} · {b.bill_no}
+                      {b.version > 1 ? ` · v${b.version}` : ""}
+                      {b.gst_applied === false ? " · No GST" : ""}
                     </div>
                   </div>
                   <div style={{ textAlign: "right" }}>
@@ -123,7 +131,7 @@ export default function HomePage() {
 
         <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
           <Link href="/history" className="btn btn-secondary">
-            All bills / history
+            All bills &amp; version history
           </Link>
         </div>
       </main>

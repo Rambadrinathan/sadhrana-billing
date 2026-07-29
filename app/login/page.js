@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { PROPERTY } from "@/lib/config";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -41,9 +42,25 @@ export default function LoginPage() {
   return (
     <div className="login-wrap">
       <form className="login-card" onSubmit={submit}>
-        <div style={{ fontSize: "2rem", marginBottom: 8 }}>🧾</div>
-        <h1>BillBanaoPay</h1>
-        <p>by OmniDEL.ai · Staff &amp; owner access</p>
+        <img
+          src="/logo.png"
+          alt={PROPERTY.tradeName || PROPERTY.name}
+          width={88}
+          height={88}
+          style={{
+            width: 88,
+            height: 88,
+            objectFit: "contain",
+            borderRadius: "50%",
+            marginBottom: 10,
+            border: "1px solid var(--line)",
+            background: "#fff",
+          }}
+        />
+        <h1 style={{ color: "var(--green-dark)" }}>
+          {PROPERTY.tradeName || PROPERTY.name}
+        </h1>
+        <p>Billing portal · Staff &amp; owner</p>
         {error ? <div className="error">{error}</div> : null}
 
         <div className="chip-row" style={{ justifyContent: "center", marginBottom: 14 }}>
@@ -80,8 +97,8 @@ export default function LoginPage() {
         </button>
         <p className="muted" style={{ marginTop: 14, fontSize: "0.8rem" }}>
           {role === "admin"
-            ? "Owner dashboard: all invoices, payments, collections"
-            : "Staff: create bills at checkout"}
+            ? "Invoices, payments, reports & Excel export"
+            : "Create checkout bills · view history"}
         </p>
       </form>
     </div>

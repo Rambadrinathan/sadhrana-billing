@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { PROPERTY, formatInrExact, formatInr } from "@/lib/config";
+import BrandHeader from "@/components/BrandHeader";
+import VersionHistory from "@/components/VersionHistory";
 
 export default function BillDetailPage() {
   const { id } = useParams();
@@ -166,15 +168,15 @@ export default function BillDetailPage() {
 
   return (
     <div className="app-shell">
-      <header className="topbar no-print">
-        <div>
-          <h1>{bill.bill_no}</h1>
-          <p className="sub">{bill.guest_name}</p>
-        </div>
-        <Link href="/" className="btn btn-ghost">
-          Home
-        </Link>
-      </header>
+      <BrandHeader
+        title={bill.bill_no}
+        subtitle={`${bill.guest_name}${bill.version > 1 ? ` · v${bill.version}` : ""}`}
+        right={
+          <Link href="/" className="btn btn-ghost">
+            Home
+          </Link>
+        }
+      />
 
       <main className="page">
         {error ? <div className="error no-print">{error}</div> : null}
@@ -321,7 +323,16 @@ export default function BillDetailPage() {
           <button className="btn btn-ghost" type="button" onClick={() => router.push("/bills/new")}>
             + Another bill
           </button>
+          <a className="btn btn-secondary" href={`/api/bills/${bill.id}/pdf`}>
+            Download PDF
+          </a>
         </div>
+
+        <VersionHistory
+          billId={bill.id}
+          currentVersion={bill.version}
+          currentTotal={bill.grand_total}
+        />
       </main>
     </div>
   );

@@ -402,6 +402,13 @@ textarea {
   font-size: 1.4rem;
 }
 
+.brand-header h1 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 52vw;
+}
+
 .login-card p {
   margin: 0 0 22px;
   color: var(--ink-muted);
