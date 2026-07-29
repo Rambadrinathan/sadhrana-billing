@@ -77,6 +77,7 @@ export async function POST(request) {
       notes,
       lines,
       source: body.source || "web",
+      gst_applied: body.gst_applied !== false,
     });
 
     // Generate + store PDF (logo, GST invoice)

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 export default function LoginPage() {
   const router = useRouter();
   const [pin, setPin] = useState("");
+  const [role, setRole] = useState("staff");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -17,7 +18,7 @@ export default function LoginPage() {
       const res = await fetch("/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pin }),
+        body: JSON.stringify({ pin, role }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -25,7 +26,11 @@ export default function LoginPage() {
         setLoading(false);
         return;
       }
-      router.replace("/");
+      if (data.role === "admin" || role === "admin") {
+        router.replace("/admin");
+      } else {
+        router.replace("/");
+      }
       router.refresh();
     } catch {
       setError("Could not sign in");
@@ -36,10 +41,28 @@ export default function LoginPage() {
   return (
     <div className="login-wrap">
       <form className="login-card" onSubmit={submit}>
-        <div style={{ fontSize: "2rem", marginBottom: 8 }}>🌿</div>
-        <h1>Sadhrana Bagh</h1>
-        <p>Checkout billing — manager access</p>
+        <div style={{ fontSize: "2rem", marginBottom: 8 }}>🧾</div>
+        <h1>BillBanaoPay</h1>
+        <p>by OmniDEL.ai · Staff &amp; owner access</p>
         {error ? <div className="error">{error}</div> : null}
+
+        <div className="chip-row" style={{ justifyContent: "center", marginBottom: 14 }}>
+          <button
+            type="button"
+            className={`chip ${role === "staff" ? "active" : ""}`}
+            onClick={() => setRole("staff")}
+          >
+            Staff
+          </button>
+          <button
+            type="button"
+            className={`chip ${role === "admin" ? "active" : ""}`}
+            onClick={() => setRole("admin")}
+          >
+            Owner / Admin
+          </button>
+        </div>
+
         <input
           className="pin-input"
           type="password"
@@ -53,8 +76,13 @@ export default function LoginPage() {
           autoFocus
         />
         <button className="btn btn-primary" type="submit" disabled={loading || !pin}>
-          {loading ? "Opening…" : "Enter"}
+          {loading ? "Opening…" : role === "admin" ? "Open dashboard" : "Enter"}
         </button>
+        <p className="muted" style={{ marginTop: 14, fontSize: "0.8rem" }}>
+          {role === "admin"
+            ? "Owner dashboard: all invoices, payments, collections"
+            : "Staff: create bills at checkout"}
+        </p>
       </form>
     </div>
   );
