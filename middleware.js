@@ -3,14 +3,15 @@ import { NextResponse } from "next/server";
 export function middleware(request) {
   const { pathname } = request.nextUrl;
 
-  const publicPdf =
-    pathname.startsWith("/api/bills/") && pathname.endsWith("/pdf");
+  const publicBillApi =
+    pathname.startsWith("/api/bills/") &&
+    (pathname.endsWith("/pdf") || pathname.endsWith("/edit"));
 
   if (
     pathname.startsWith("/login") ||
     pathname.startsWith("/api/login") ||
     pathname.startsWith("/api/telegram") ||
-    publicPdf ||
+    publicBillApi ||
     pathname.startsWith("/b/") ||
     pathname.startsWith("/invoice/") ||
     pathname.startsWith("/_next") ||

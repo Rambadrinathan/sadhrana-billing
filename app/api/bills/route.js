@@ -4,6 +4,7 @@ import {
   listBills,
   matchCatalogItem,
 } from "@/lib/bills";
+import { generateAndStoreInvoicePdf } from "@/lib/invoice-store";
 import { PROPERTY } from "@/lib/config";
 
 export const dynamic = "force-dynamic";
@@ -78,7 +79,18 @@ export async function POST(request) {
       source: body.source || "web",
     });
 
-    return Response.json({ bill });
+    // Generate + store PDF (logo, GST invoice)
+    let stored = { bill, pdfUrl: null };
+    try {
+      stored = await generateAndStoreInvoicePdf(bill);
+    } catch (e) {
+      console.error("pdf store", e);
+    }
+
+    return Response.json({
+      bill: stored.bill,
+      pdf_url: stored.pdfUrl || stored.bill?.pdf_url || null,
+    });
   } catch (e) {
     return Response.json({ error: e.message || "Failed" }, { status: 500 });
   }
