@@ -7,6 +7,7 @@ import { PROPERTY } from "@/lib/config";
 export default function LoginPage() {
   const router = useRouter();
   const [pin, setPin] = useState("");
+  const [name, setName] = useState("");
   const [role, setRole] = useState("staff");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -19,13 +20,20 @@ export default function LoginPage() {
       const res = await fetch("/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pin, role }),
+        body: JSON.stringify({ pin, role, name: name.trim() }),
       });
       const data = await res.json();
       if (!res.ok) {
         setError(data.error || "Wrong PIN");
         setLoading(false);
         return;
+      }
+      if (name.trim()) {
+        try {
+          localStorage.setItem("sb_staff_name", name.trim());
+        } catch {
+          /* ignore */
+        }
       }
       if (data.role === "admin" || role === "admin") {
         router.replace("/admin");
@@ -42,19 +50,21 @@ export default function LoginPage() {
   return (
     <div className="login-wrap">
       <form className="login-card" onSubmit={submit}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/logo.png"
           alt={PROPERTY.tradeName || PROPERTY.name}
-          width={88}
-          height={88}
+          width={96}
+          height={96}
           style={{
-            width: 88,
-            height: 88,
+            width: 96,
+            height: 96,
             objectFit: "contain",
             borderRadius: "50%",
             marginBottom: 10,
-            border: "1px solid var(--line)",
+            border: "2px solid var(--green)",
             background: "#fff",
+            boxShadow: "0 4px 16px rgba(47,93,58,0.12)",
           }}
         />
         <h1 style={{ color: "var(--green-dark)" }}>
@@ -81,6 +91,17 @@ export default function LoginPage() {
         </div>
 
         <input
+          type="text"
+          className="search-input"
+          style={{ marginBottom: 10, textAlign: "center", letterSpacing: 0 }}
+          placeholder={role === "admin" ? "Your name (optional)" : "Your name (for bill history)"}
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          autoComplete="name"
+          maxLength={40}
+        />
+
+        <input
           className="pin-input"
           type="password"
           inputMode="numeric"
@@ -97,8 +118,8 @@ export default function LoginPage() {
         </button>
         <p className="muted" style={{ marginTop: 14, fontSize: "0.8rem" }}>
           {role === "admin"
-            ? "Invoices, payments, reports & Excel export"
-            : "Create checkout bills · view history"}
+            ? "Invoices, catalog, reports, Excel & day-end"
+            : "Create checkout bills · share · collect"}
         </p>
       </form>
     </div>

@@ -25,6 +25,7 @@ async function enforceMenuRates(rawLines) {
         qty: Number(l.qty) || 1,
         rate_inr: Number(matched.rate_inr),
         gst_pct: Number(matched.gst_pct) || PROPERTY.defaultGstPct,
+        hsn_sac: matched.hsn_sac || PROPERTY.defaultHsn,
       };
     }
 
@@ -36,6 +37,7 @@ async function enforceMenuRates(rawLines) {
       rate_inr: Number(l.rate_inr) || 0,
       gst_pct:
         Number(l.gst_pct) > 0 ? Number(l.gst_pct) : PROPERTY.defaultGstPct,
+      hsn_sac: l.hsn_sac || PROPERTY.defaultHsn,
     };
   });
 }
@@ -45,8 +47,9 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const date = searchParams.get("date");
     const status = searchParams.get("status");
+    const q = searchParams.get("q") || searchParams.get("search") || "";
     const limit = Number(searchParams.get("limit") || 50);
-    const bills = await listBills({ date, status, limit });
+    const bills = await listBills({ date, status, limit, q });
     return Response.json({ bills });
   } catch (e) {
     return Response.json({ error: e.message }, { status: 500 });
@@ -59,8 +62,11 @@ export async function POST(request) {
     const villa = String(body.villa || "").trim();
     const guest_name = String(body.guest_name || "").trim();
     const guest_phone = body.guest_phone ? String(body.guest_phone).trim() : null;
+    const guest_email = body.guest_email ? String(body.guest_email).trim() : null;
     const notes = body.notes ? String(body.notes).trim() : null;
     const rawLines = Array.isArray(body.lines) ? body.lines : [];
+    const created_by = body.created_by ? String(body.created_by).trim() : null;
+    const amount_paid = Number(body.amount_paid) || 0;
 
     if (!villa || !guest_name) {
       return Response.json({ error: "Villa and guest name are required" }, { status: 400 });
@@ -74,10 +80,13 @@ export async function POST(request) {
       villa,
       guest_name,
       guest_phone,
+      guest_email,
       notes,
       lines,
       source: body.source || "web",
       gst_applied: body.gst_applied !== false,
+      created_by,
+      amount_paid,
     });
 
     // Generate + store PDF (logo, GST invoice)

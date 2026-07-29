@@ -6,13 +6,12 @@ export async function POST(request) {
   try {
     const body = await request.json();
     const role = body?.role === "admin" ? "admin" : "staff";
+    const displayName = String(body?.name || body?.staff_name || "").trim();
     const ok = checkPin(body?.pin, role);
     if (!ok) {
-      // If admin login failed, try staff pin only for staff role
       if (role === "staff" && checkPin(body?.pin, "admin")) {
-        // admin pin can open staff too
         const headers = new Headers({ "Content-Type": "application/json" });
-        for (const c of authCookieHeaders(true, "admin")) {
+        for (const c of authCookieHeaders(true, "admin", displayName || "Owner")) {
           headers.append("Set-Cookie", c);
         }
         return new Response(JSON.stringify({ ok: true, role: "admin" }), {
@@ -23,10 +22,10 @@ export async function POST(request) {
       return Response.json({ ok: false, error: "Wrong PIN" }, { status: 401 });
     }
     const headers = new Headers({ "Content-Type": "application/json" });
-    for (const c of authCookieHeaders(true, role)) {
+    for (const c of authCookieHeaders(true, role, displayName)) {
       headers.append("Set-Cookie", c);
     }
-    return new Response(JSON.stringify({ ok: true, role }), {
+    return new Response(JSON.stringify({ ok: true, role, name: displayName }), {
       status: 200,
       headers,
     });
@@ -41,4 +40,17 @@ export async function DELETE() {
     headers.append("Set-Cookie", c);
   }
   return new Response(JSON.stringify({ ok: true }), { status: 200, headers });
+}
+
+/** GET — current session name/role for client */
+export async function GET() {
+  const { getRole, getStaffName, isAuthed } = await import("@/lib/auth");
+  if (!isAuthed()) {
+    return Response.json({ ok: false }, { status: 401 });
+  }
+  return Response.json({
+    ok: true,
+    role: getRole(),
+    name: getStaffName(),
+  });
 }

@@ -3,9 +3,16 @@ import { NextResponse } from "next/server";
 export function middleware(request) {
   const { pathname } = request.nextUrl;
 
+  // Static assets in /public (logo.png etc.) must never hit the login gate
+  if (/\.[a-zA-Z0-9]+$/.test(pathname) && !pathname.startsWith("/api")) {
+    return NextResponse.next();
+  }
+
   const publicBillApi =
     pathname.startsWith("/api/bills/") &&
-    (pathname.endsWith("/pdf") || pathname.endsWith("/edit"));
+    (pathname.endsWith("/pdf") ||
+      pathname.endsWith("/edit") ||
+      pathname.endsWith("/email"));
 
   if (
     pathname.startsWith("/login") ||
@@ -31,5 +38,5 @@ export function middleware(request) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/((?!_next/static|_next/image).*)"],
 };

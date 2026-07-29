@@ -9,14 +9,17 @@ export default function HistoryPage() {
   const [bills, setBills] = useState([]);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState("");
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    const t = setTimeout(async () => {
       setLoading(true);
-      const q = status ? `?status=${status}&limit=100` : "?limit=100";
+      const params = new URLSearchParams({ limit: "100" });
+      if (status) params.set("status", status);
+      if (search.trim()) params.set("q", search.trim());
       try {
-        const res = await fetch(`/api/bills${q}`);
+        const res = await fetch(`/api/bills?${params}`);
         const data = await res.json();
         if (!cancelled) setBills(data.bills || []);
       } catch {
@@ -24,17 +27,18 @@ export default function HistoryPage() {
       } finally {
         if (!cancelled) setLoading(false);
       }
-    })();
+    }, search ? 250 : 0);
     return () => {
       cancelled = true;
+      clearTimeout(t);
     };
-  }, [status]);
+  }, [status, search]);
 
   return (
     <div className="app-shell">
       <BrandHeader
         title="Bill history"
-        subtitle="All invoices · open for version history"
+        subtitle="Search · open for version history"
         right={
           <Link href="/" className="btn btn-ghost">
             Home
@@ -43,10 +47,19 @@ export default function HistoryPage() {
       />
 
       <main className="page">
+        <input
+          className="search-input"
+          type="search"
+          placeholder="Search bill no, guest, or villa…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+
         <div className="chip-row">
           {[
             ["", "All"],
             ["unpaid", "Unpaid"],
+            ["partial", "Partial"],
             ["paid", "Paid"],
             ["void", "Void"],
           ].map(([key, label]) => (
@@ -89,6 +102,7 @@ export default function HistoryPage() {
                     <div className="muted" style={{ fontSize: "0.88rem" }}>
                       {b.bill_date} · {b.villa} · {b.bill_no}
                       {b.gst_applied === false ? " · No GST" : ""}
+                      {b.created_by ? ` · ${b.created_by}` : ""}
                     </div>
                   </div>
                   <div style={{ textAlign: "right" }}>

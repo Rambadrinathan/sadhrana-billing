@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { VILLAS, CATEGORY_LABELS, formatInr } from "@/lib/config";
+import { VILLAS, CATEGORY_LABELS, formatInr, PROPERTY } from "@/lib/config";
+import BrandHeader from "@/components/BrandHeader";
 
 export default function NewBillPage() {
   const router = useRouter();
@@ -12,7 +13,10 @@ export default function NewBillPage() {
   const [villa, setVilla] = useState(VILLAS[0]);
   const [guestName, setGuestName] = useState("");
   const [guestPhone, setGuestPhone] = useState("");
+  const [guestEmail, setGuestEmail] = useState("");
   const [notes, setNotes] = useState("");
+  const [advance, setAdvance] = useState("");
+  const [staffName, setStaffName] = useState("");
   const [qtyMap, setQtyMap] = useState({});
   const [customDesc, setCustomDesc] = useState("");
   const [customRate, setCustomRate] = useState("");
@@ -21,6 +25,17 @@ export default function NewBillPage() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
+    try {
+      setStaffName(localStorage.getItem("sb_staff_name") || "");
+    } catch {
+      /* ignore */
+    }
+    fetch("/api/login")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.name) setStaffName(d.name);
+      })
+      .catch(() => {});
     fetch("/api/catalog")
       .then((r) => r.json())
       .then((d) => setCatalog(d.items || []))
@@ -54,6 +69,7 @@ export default function NewBillPage() {
         qty,
         rate_inr: Number(item.rate_inr),
         gst_pct: Number(item.gst_pct || 0),
+        hsn_sac: item.hsn_sac || PROPERTY.defaultHsn,
       });
     }
     if (customDesc.trim() && Number(customRate) >= 0 && Number(customQty) > 0) {
@@ -64,6 +80,7 @@ export default function NewBillPage() {
         qty: Number(customQty),
         rate_inr: Number(customRate),
         gst_pct: 0,
+        hsn_sac: PROPERTY.defaultHsn,
       });
     }
     return lines;
@@ -104,8 +121,11 @@ export default function NewBillPage() {
           villa,
           guest_name: guestName.trim(),
           guest_phone: guestPhone.trim() || null,
+          guest_email: guestEmail.trim() || null,
           notes: notes.trim() || null,
           lines: selectedLines,
+          created_by: staffName.trim() || null,
+          amount_paid: Number(advance) > 0 ? Number(advance) : 0,
         }),
       });
       const data = await res.json();
@@ -129,15 +149,15 @@ export default function NewBillPage() {
 
   return (
     <div className="app-shell">
-      <header className="topbar no-print">
-        <div>
-          <h1>New checkout bill</h1>
-          <p className="sub">F&amp;B · massage · bonfire</p>
-        </div>
-        <Link href="/" className="btn btn-ghost">
-          Cancel
-        </Link>
-      </header>
+      <BrandHeader
+        title="New checkout bill"
+        subtitle={staffName ? `Staff: ${staffName}` : "F&B · massage · bonfire"}
+        right={
+          <Link href="/" className="btn btn-ghost">
+            Cancel
+          </Link>
+        }
+      />
 
       <main className="page" style={{ paddingBottom: 140 }}>
         {error ? <div className="error">{error}</div> : null}
@@ -163,12 +183,30 @@ export default function NewBillPage() {
             />
           </div>
           <div className="field">
-            <label>Guest phone (optional)</label>
+            <label>Guest phone (WhatsApp)</label>
             <input
               value={guestPhone}
               onChange={(e) => setGuestPhone(e.target.value)}
-              placeholder="For WhatsApp"
+              placeholder="10-digit mobile"
               inputMode="tel"
+            />
+          </div>
+          <div className="field">
+            <label>Guest email (optional)</label>
+            <input
+              value={guestEmail}
+              onChange={(e) => setGuestEmail(e.target.value)}
+              placeholder="for email invoice"
+              type="email"
+            />
+          </div>
+          <div className="field">
+            <label>Advance / amount paid now (₹)</label>
+            <input
+              value={advance}
+              onChange={(e) => setAdvance(e.target.value)}
+              placeholder="0"
+              inputMode="decimal"
             />
           </div>
           <div className="field">

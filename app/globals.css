@@ -402,11 +402,91 @@ textarea {
   font-size: 1.4rem;
 }
 
+.brand-header {
+  flex-wrap: nowrap;
+}
+
+.brand-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+
+.brand-logo-link {
+  flex-shrink: 0;
+  line-height: 0;
+  display: block;
+}
+
+.brand-logo {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid var(--green);
+  box-shadow: 0 2px 8px rgba(47, 93, 58, 0.15);
+  display: block;
+}
+
+.brand-header-text {
+  min-width: 0;
+}
+
+.brand-name {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--green);
+}
+
 .brand-header h1 {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: 52vw;
+  max-width: min(52vw, 220px);
+  margin: 2px 0 0;
+  font-size: 1.05rem;
+}
+
+.brand-header-right {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.badge-partial {
+  background: #e8f0fe;
+  color: #1a56db;
+}
+
+.search-input {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  background: #fff;
+}
+
+.upi-box {
+  text-align: center;
+  padding: 14px;
+  background: var(--green-soft);
+  border-radius: 12px;
+  margin-top: 12px;
+}
+
+.upi-box img {
+  width: 180px;
+  height: 180px;
+  border-radius: 8px;
+  background: #fff;
+  border: 1px solid var(--line);
 }
 
 .login-card p {

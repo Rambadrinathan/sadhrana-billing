@@ -15,13 +15,31 @@ export default function HomePage() {
   const [bills, setBills] = useState([]);
   const [loading, setLoading] = useState(true);
   const [demo, setDemo] = useState(false);
+  const [search, setSearch] = useState("");
+  const [staffName, setStaffName] = useState("");
   const date = todayIst();
+
+  useEffect(() => {
+    try {
+      setStaffName(localStorage.getItem("sb_staff_name") || "");
+    } catch {
+      /* ignore */
+    }
+    fetch("/api/login")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.name) setStaffName(d.name);
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(`/api/bills?date=${date}&limit=40`);
+        const params = new URLSearchParams({ date, limit: "40" });
+        if (search.trim()) params.set("q", search.trim());
+        const res = await fetch(`/api/bills?${params}`);
         const data = await res.json();
         if (!cancelled) {
           setBills(data.bills || []);
@@ -36,14 +54,23 @@ export default function HomePage() {
     return () => {
       cancelled = true;
     };
-  }, [date]);
+  }, [date, search]);
 
   const stats = useMemo(() => {
     const active = bills.filter((b) => b.status !== "void");
     const paid = active.filter((b) => b.status === "paid");
-    const unpaid = active.filter((b) => b.status === "unpaid");
-    const collected = paid.reduce((s, b) => s + Number(b.grand_total || 0), 0);
-    const pending = unpaid.reduce((s, b) => s + Number(b.grand_total || 0), 0);
+    const unpaid = active.filter(
+      (b) => b.status === "unpaid" || b.status === "partial"
+    );
+    const collected = active.reduce(
+      (s, b) => s + Number(b.amount_paid || (b.status === "paid" ? b.grand_total : 0) || 0),
+      0
+    );
+    const pending = unpaid.reduce((s, b) => {
+      const due =
+        Number(b.grand_total || 0) - Number(b.amount_paid || 0);
+      return s + Math.max(0, due);
+    }, 0);
     return { count: active.length, collected, pending, unpaidCount: unpaid.length };
   }, [bills]);
 
@@ -57,7 +84,11 @@ export default function HomePage() {
     <div className="app-shell">
       <BrandHeader
         title="Staff checkout"
-        subtitle={`${date} · extras & F&B`}
+        subtitle={
+          staffName
+            ? `${date} · ${staffName}`
+            : `${date} · extras & F&B`
+        }
         right={
           <>
             <Link href="/history" className="btn btn-ghost">
@@ -91,11 +122,22 @@ export default function HomePage() {
           </div>
         </div>
 
+        <input
+          className="search-input"
+          type="search"
+          placeholder="Search bill no or guest name…"
+          value={search}
+          onChange={(e) => {
+            setLoading(true);
+            setSearch(e.target.value);
+          }}
+        />
+
         <div className="card">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <strong>Today’s bills</strong>
+            <strong>{search.trim() ? "Search results" : "Today’s bills"}</strong>
             <span className="muted" style={{ fontSize: "0.9rem" }}>
-              {stats.count} · {stats.unpaidCount} unpaid
+              {stats.count} · {stats.unpaidCount} open
             </span>
           </div>
 
@@ -105,7 +147,9 @@ export default function HomePage() {
             </p>
           ) : bills.length === 0 ? (
             <p className="muted" style={{ marginTop: 16 }}>
-              No bills yet. Create one when the guest is checking out.
+              {search.trim()
+                ? "No matching bills."
+                : "No bills yet. Create one when the guest is checking out."}
             </p>
           ) : (
             bills.map((b) => (
@@ -117,6 +161,7 @@ export default function HomePage() {
                       {b.villa} · {b.bill_no}
                       {b.version > 1 ? ` · v${b.version}` : ""}
                       {b.gst_applied === false ? " · No GST" : ""}
+                      {b.created_by ? ` · ${b.created_by}` : ""}
                     </div>
                   </div>
                   <div style={{ textAlign: "right" }}>
@@ -134,6 +179,9 @@ export default function HomePage() {
             All bills &amp; version history
           </Link>
         </div>
+        <p className="muted" style={{ textAlign: "center", fontSize: "0.75rem", marginTop: 12 }}>
+          {PROPERTY.tradeName}
+        </p>
       </main>
 
       <div className="fab-bar no-print">
