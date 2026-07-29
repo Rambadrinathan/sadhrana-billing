@@ -3,11 +3,16 @@ import { NextResponse } from "next/server";
 export function middleware(request) {
   const { pathname } = request.nextUrl;
 
+  const publicPdf =
+    pathname.startsWith("/api/bills/") && pathname.endsWith("/pdf");
+
   if (
     pathname.startsWith("/login") ||
     pathname.startsWith("/api/login") ||
     pathname.startsWith("/api/telegram") ||
+    publicPdf ||
     pathname.startsWith("/b/") ||
+    pathname.startsWith("/invoice/") ||
     pathname.startsWith("/_next") ||
     pathname === "/favicon.ico"
   ) {
