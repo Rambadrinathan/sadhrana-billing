@@ -1,0 +1,12 @@
+node_modules
+.next
+.env
+.env.local
+.vercel
+*.log
+.DS_Store
+
+.supabase-db-password
+supabase/.temp
+
+.vercel
