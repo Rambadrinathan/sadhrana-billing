@@ -24,7 +24,15 @@ Footer: *BillBanaoPay by OmniDEL.ai*
 
 ## 1. One-line pitch (benefit first)
 
-**BillBanaoPay** helps you **get paid without arguments** — staff bill from Telegram or a photo of a pad; you get a formal invoice, GST when you need it, a clear trail of changes, and owner reports for collections and your CA.
+**BillBanaoPay** helps you **get paid without arguments** — staff bill from **their phone** (Telegram or a photo of a pad), with almost no training; you get a formal invoice, GST when you need it, a clear trail of changes, and owner reports for collections and your CA.
+
+### Product design promise (say this on the website)
+
+| Promise | What it means for the buyer |
+|---------|----------------------------|
+| **Mobile-friendly** | Staff and owner can work from a phone — no desktop POS at the counter |
+| **Easy for staff** | Few taps: type or photo → staff name → GST → Confirm. Learnable in one short session |
+| **Phone they already use** | Telegram (or browser) — no app-store install for the field team |
 
 ---
 
