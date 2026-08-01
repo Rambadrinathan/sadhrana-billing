@@ -163,6 +163,34 @@ export default function BillDetailPage() {
     }
   }
 
+  /**
+   * Soft delete. The invoice leaves the working list but the row is retained
+   * so the owner can audit or restore it — a GST document must not vanish.
+   */
+  async function deleteBill() {
+    const label = `${bill.bill_no} · ${bill.guest_name} · ${formatInr(bill.grand_total)}`;
+    const reason = window.prompt(
+      `Delete this invoice?\n\n${label}\n\nIt leaves this list. The owner can still see and restore it under Admin → Deleted records.\n\nReason (optional):`,
+      ""
+    );
+    if (reason === null) return; // cancelled
+    setBusy(true);
+    setLineMsg("");
+    try {
+      const res = await fetch(`/api/bills/${bill.id}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: reason || null }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not delete");
+      router.push("/");
+    } catch (e) {
+      setLineMsg(e.message);
+      setBusy(false);
+    }
+  }
+
   async function markVoid() {
     if (!confirm("Void this bill?")) return;
     setBusy(true);
@@ -476,14 +504,50 @@ export default function BillDetailPage() {
                 </tbody>
               </table>
               {bill.status !== "void" ? (
-                <button
-                  type="button"
-                  className="btn btn-ghost"
-                  onClick={startLineEdit}
-                  style={{ marginTop: 8, fontSize: "0.85rem" }}
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 8,
+                    marginTop: 12,
+                    flexWrap: "wrap",
+                  }}
                 >
-                  ✏️ Correct line items
-                </button>
+                  <button
+                    type="button"
+                    onClick={startLineEdit}
+                    style={{
+                      flex: "1 1 46%",
+                      padding: "11px 14px",
+                      borderRadius: 8,
+                      border: "2px solid #1F4B43",
+                      background: "#1F4B43",
+                      color: "#fff",
+                      fontSize: "0.95rem",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                    }}
+                  >
+                    ✎ Edit items
+                  </button>
+                  <button
+                    type="button"
+                    onClick={deleteBill}
+                    disabled={busy}
+                    style={{
+                      flex: "1 1 46%",
+                      padding: "11px 14px",
+                      borderRadius: 8,
+                      border: "2px solid #C2562A",
+                      background: "#fff",
+                      color: "#C2562A",
+                      fontSize: "0.95rem",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                    }}
+                  >
+                    🗑 Delete invoice
+                  </button>
+                </div>
               ) : null}
             </>
           ) : (

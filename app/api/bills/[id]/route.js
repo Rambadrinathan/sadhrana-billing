@@ -1,4 +1,6 @@
 import { getSupabase, isSupabaseConfigured } from "@/lib/supabase";
+import { softDeleteBill } from "@/lib/bills";
+import { isAuthed, getStaffName } from "@/lib/auth";
 import { updateBillStatus } from "@/lib/bills";
 
 export const dynamic = "force-dynamic";
@@ -63,5 +65,28 @@ export async function PATCH(request, { params }) {
     return Response.json({ bill });
   } catch (e) {
     return Response.json({ error: e.message || "Update failed" }, { status: 500 });
+  }
+}
+
+/** DELETE — soft delete. Row is retained for the admin audit trail. */
+export async function DELETE(request, { params }) {
+  try {
+    if (!isAuthed()) {
+      return Response.json({ error: "Login required" }, { status: 401 });
+    }
+    let reason = null;
+    try {
+      const body = await request.json();
+      reason = body?.reason || null;
+    } catch {
+      /* no body is fine */
+    }
+    const bill = await softDeleteBill(params.id, {
+      deletedBy: getStaffName() || null,
+      reason,
+    });
+    return Response.json({ ok: true, bill });
+  } catch (e) {
+    return Response.json({ error: e.message }, { status: 500 });
   }
 }

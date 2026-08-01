@@ -954,7 +954,185 @@ export default function AdminDashboard() {
             </div>
           </>
         ) : null}
+
+        <DeletedRecords />
       </main>
+    </div>
+  );
+}
+
+/**
+ * Audit trail. Deleting a bill or purchase only hides it from the working
+ * view; the row is kept here so the owner can check what was removed, by
+ * whom, and put it back.
+ */
+function DeletedRecords() {
+  const [data, setData] = useState(null);
+  const [msg, setMsg] = useState("");
+  const [open, setOpen] = useState(false);
+
+  async function load() {
+    try {
+      const res = await fetch("/api/admin/deleted");
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || "Could not load");
+      setData(d);
+    } catch (e) {
+      setMsg(e.message);
+    }
+  }
+
+  useEffect(() => {
+    if (open && !data) load();
+  }, [open, data]);
+
+  async function restore(kind, id) {
+    setMsg("");
+    try {
+      const res = await fetch("/api/admin/deleted", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kind, id }),
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || "Could not restore");
+      setMsg("Restored.");
+      setData(null);
+      await load();
+    } catch (e) {
+      setMsg(e.message);
+    }
+  }
+
+  const count = data ? (data.bills?.length || 0) + (data.expenses?.length || 0) : null;
+
+  return (
+    <div className="card" style={{ marginTop: 14 }}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        style={{
+          background: "none",
+          border: "none",
+          padding: 0,
+          fontWeight: 800,
+          fontSize: "1rem",
+          cursor: "pointer",
+          color: "#1F4B43",
+        }}
+      >
+        {open ? "▾" : "▸"} Deleted records{count !== null ? ` (${count})` : ""}
+      </button>
+      <p className="muted" style={{ fontSize: "0.82rem", margin: "6px 0 0" }}>
+        Nothing is ever really destroyed. Staff deletions land here.
+      </p>
+
+      {open ? (
+        <div style={{ marginTop: 10 }}>
+          {msg ? (
+            <p className="muted" style={{ fontSize: "0.85rem" }}>
+              {msg}
+            </p>
+          ) : null}
+          {!data ? (
+            <p className="muted" style={{ fontSize: "0.85rem" }}>
+              Loading…
+            </p>
+          ) : (
+            <>
+              <strong style={{ fontSize: "0.9rem" }}>
+                Invoices ({data.bills?.length || 0})
+              </strong>
+              {(data.bills || []).length === 0 ? (
+                <p className="muted" style={{ fontSize: "0.85rem" }}>
+                  None.
+                </p>
+              ) : (
+                data.bills.map((b) => (
+                  <div
+                    key={b.id}
+                    style={{
+                      borderTop: "1px solid var(--line)",
+                      padding: "8px 0",
+                      fontSize: "0.85rem",
+                    }}
+                  >
+                    <strong>{b.bill_no}</strong> · {b.guest_name} ·{" "}
+                    {formatInr(b.grand_total)}
+                    <div className="muted" style={{ fontSize: "0.78rem" }}>
+                      deleted {String(b.deleted_at).slice(0, 16).replace("T", " ")}
+                      {b.deleted_by ? ` by ${b.deleted_by}` : ""}
+                      {b.delete_reason ? ` — "${b.delete_reason}"` : ""}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => restore("bill", b.id)}
+                      style={{
+                        marginTop: 4,
+                        background: "none",
+                        border: "1px solid #1F4B43",
+                        borderRadius: 5,
+                        color: "#1F4B43",
+                        fontSize: "0.78rem",
+                        fontWeight: 600,
+                        padding: "3px 10px",
+                        cursor: "pointer",
+                      }}
+                    >
+                      Restore
+                    </button>
+                  </div>
+                ))
+              )}
+
+              <strong style={{ fontSize: "0.9rem", display: "block", marginTop: 12 }}>
+                Purchases ({data.expenses?.length || 0})
+              </strong>
+              {(data.expenses || []).length === 0 ? (
+                <p className="muted" style={{ fontSize: "0.85rem" }}>
+                  None.
+                </p>
+              ) : (
+                data.expenses.map((x) => (
+                  <div
+                    key={x.id}
+                    style={{
+                      borderTop: "1px solid var(--line)",
+                      padding: "8px 0",
+                      fontSize: "0.85rem",
+                    }}
+                  >
+                    <strong>{x.title}</strong> · {formatInr(x.total_inr)} ·{" "}
+                    {x.expense_date}
+                    <div className="muted" style={{ fontSize: "0.78rem" }}>
+                      deleted {String(x.deleted_at).slice(0, 16).replace("T", " ")}
+                      {x.deleted_by ? ` by ${x.deleted_by}` : ""}
+                      {x.delete_reason ? ` — "${x.delete_reason}"` : ""}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => restore("expense", x.id)}
+                      style={{
+                        marginTop: 4,
+                        background: "none",
+                        border: "1px solid #1F4B43",
+                        borderRadius: 5,
+                        color: "#1F4B43",
+                        fontSize: "0.78rem",
+                        fontWeight: 600,
+                        padding: "3px 10px",
+                        cursor: "pointer",
+                      }}
+                    >
+                      Restore
+                    </button>
+                  </div>
+                ))
+              )}
+            </>
+          )}
+        </div>
+      ) : null}
     </div>
   );
 }

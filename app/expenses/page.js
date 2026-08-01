@@ -36,7 +36,11 @@ export default function ExpensesPage() {
   /** Remove an expense entirely — its items go with it (FK cascade). */
   async function removeExpense(r) {
     const label = `${r.title} · ${formatInrExact(r.total_inr)} · ${r.expense_date}`;
-    if (!window.confirm(`Delete this expense?\n\n${label}\n\nThis cannot be undone.`)) {
+    if (
+      !window.confirm(
+        `Delete this expense?\n\n${label}\n\nIt disappears from this list. The owner can still see and restore it under Admin → Deleted records.`
+      )
+    ) {
       return;
     }
     setBusy(true);
@@ -237,47 +241,47 @@ export default function ExpensesPage() {
                 >
                   <button
                     type="button"
-                    className="link-btn"
                     onClick={() => toggleLines(r.id)}
                     style={{
-                      background: "none",
-                      border: "none",
-                      padding: 0,
-                      color: "var(--forest, #1F4B43)",
+                      padding: "7px 14px",
+                      borderRadius: 6,
+                      border: "1.5px solid #1F4B43",
+                      background: openId === r.id ? "#1F4B43" : "#fff",
+                      color: openId === r.id ? "#fff" : "#1F4B43",
                       fontSize: "0.85rem",
-                      fontWeight: 600,
+                      fontWeight: 700,
                       cursor: "pointer",
                     }}
                   >
-                    {openId === r.id ? "▾ Hide items" : "▸ Items"}
+                    {openId === r.id ? "✕ Close" : "✎ Edit items"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => removeExpense(r)}
+                    disabled={busy}
+                    style={{
+                      padding: "7px 14px",
+                      borderRadius: 6,
+                      border: "1.5px solid #C2562A",
+                      background: "#fff",
+                      color: "#C2562A",
+                      fontSize: "0.85rem",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                    }}
+                  >
+                    🗑 Delete
                   </button>
                   {r.invoice_pdf_url ? (
                     <a
                       href={r.invoice_pdf_url}
                       target="_blank"
                       rel="noreferrer"
-                      style={{ fontSize: "0.85rem" }}
+                      style={{ fontSize: "0.85rem", marginLeft: "auto" }}
                     >
-                      View invoice file
+                      Invoice file
                     </a>
                   ) : null}
-                  <button
-                    type="button"
-                    onClick={() => removeExpense(r)}
-                    disabled={busy}
-                    style={{
-                      background: "none",
-                      border: "none",
-                      padding: 0,
-                      color: "#C2562A",
-                      fontSize: "0.85rem",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      marginLeft: "auto",
-                    }}
-                  >
-                    Delete
-                  </button>
                 </div>
 
                 {openId === r.id ? (

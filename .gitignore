@@ -15,3 +15,4 @@ supabase/.temp
 tmp-bamboo-house/
 docs/test-estimate.pdf
 docs/*.docx
+docs/bills-backup-*.json
