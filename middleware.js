@@ -39,6 +39,38 @@ export function middleware(request) {
     return NextResponse.redirect(url);
   }
 
+  // Staff role sees only Bills + Purchases. Everything else is owner territory.
+  // Enforced here, not merely hidden in the UI, so a typed URL can't get round it.
+  const role = request.cookies.get("sb_role")?.value || "staff";
+  if (role !== "admin") {
+    const ownerOnly = [
+      "/admin",
+      "/reports",
+      "/leads",
+      "/guests",
+      "/inventory",
+      "/attendance",
+      "/api/reports",
+      "/api/leads",
+      "/api/guests",
+      "/api/attendance",
+      // NOT /api/catalog (bills need menu rates) and NOT /api/inventory
+      // (the Purchases page needs the area list for its dropdown).
+    ];
+    if (ownerOnly.some((p) => pathname === p || pathname.startsWith(p + "/"))) {
+      if (pathname.startsWith("/api/")) {
+        return NextResponse.json(
+          { error: "Owner access required" },
+          { status: 403 }
+        );
+      }
+      const url = request.nextUrl.clone();
+      url.pathname = "/";
+      url.search = "?denied=1";
+      return NextResponse.redirect(url);
+    }
+  }
+
   return NextResponse.next();
 }
 

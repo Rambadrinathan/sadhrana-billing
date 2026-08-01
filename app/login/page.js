@@ -8,6 +8,19 @@ export default function LoginPage() {
   const router = useRouter();
   const [pin, setPin] = useState("");
   const [role, setRole] = useState("staff");
+  const [staffOnly, setStaffOnly] = useState(false);
+
+  useEffect(() => {
+    try {
+      const q = new URLSearchParams(window.location.search);
+      if (q.get("staff") === "1" || q.get("role") === "staff") {
+        setStaffOnly(true);
+        setRole("staff");
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
   const [staffList, setStaffList] = useState([]);
   const [staffPick, setStaffPick] = useState("");
   const [staffOther, setStaffOther] = useState("");
@@ -115,25 +128,29 @@ export default function LoginPage() {
         <h1 style={{ color: "var(--green-dark)", fontWeight: 750 }}>
           {PROPERTY.tradeName || PROPERTY.name}
         </h1>
-        <p>Billing portal · Staff &amp; owner</p>
+        <p>{staffOnly ? "Billing portal · Staff" : "Billing portal · Staff & owner"}</p>
         {error ? <div className="error">{error}</div> : null}
 
-        <div className="chip-row" style={{ justifyContent: "center", marginBottom: 14 }}>
-          <button
-            type="button"
-            className={`chip ${role === "staff" ? "active" : ""}`}
-            onClick={() => setRole("staff")}
-          >
-            Staff
-          </button>
-          <button
-            type="button"
-            className={`chip ${role === "admin" ? "active" : ""}`}
-            onClick={() => setRole("admin")}
-          >
-            Owner / Admin
-          </button>
-        </div>
+        {/* ?staff=1 gives a dedicated staff link with no Owner option on screen.
+            This is presentation only — real enforcement is the PIN + middleware. */}
+        {staffOnly ? null : (
+          <div className="chip-row" style={{ justifyContent: "center", marginBottom: 14 }}>
+            <button
+              type="button"
+              className={`chip ${role === "staff" ? "active" : ""}`}
+              onClick={() => setRole("staff")}
+            >
+              Staff
+            </button>
+            <button
+              type="button"
+              className={`chip ${role === "admin" ? "active" : ""}`}
+              onClick={() => setRole("admin")}
+            >
+              Owner / Admin
+            </button>
+          </div>
+        )}
 
         {role === "staff" ? (
           <>

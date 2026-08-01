@@ -1,6 +1,7 @@
 import { editBill, listBillVersions } from "@/lib/invoice-store";
 import { getCatalog, matchCatalogItem } from "@/lib/bills";
 import { PROPERTY } from "@/lib/config";
+import { isAuthed, getStaffName } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -34,15 +35,21 @@ async function enforceMenuRates(rawLines) {
 /** PATCH — edit invoice; archives previous version + regenerates PDF */
 export async function PATCH(request, { params }) {
   try {
+    // Revising an invoice is a financial act — never allow it unauthenticated.
+    if (!isAuthed()) {
+      return Response.json({ error: "Login required" }, { status: 401 });
+    }
     const body = await request.json();
     const lines = body.lines ? await enforceMenuRates(body.lines) : undefined;
+    const who = getStaffName();
     const result = await editBill(params.id, {
       villa: body.villa,
       guest_name: body.guest_name,
       guest_phone: body.guest_phone,
       notes: body.notes,
       lines,
-      change_note: body.change_note || "Edited via API",
+      change_note:
+        (body.change_note || "Edited via API") + (who ? ` (${who})` : ""),
     });
     return Response.json({
       bill: result.bill,
@@ -57,6 +64,9 @@ export async function PATCH(request, { params }) {
 /** GET versions history */
 export async function GET(_request, { params }) {
   try {
+    if (!isAuthed()) {
+      return Response.json({ error: "Login required" }, { status: 401 });
+    }
     const versions = await listBillVersions(params.id);
     return Response.json({ versions });
   } catch (e) {

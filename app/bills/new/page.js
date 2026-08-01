@@ -101,7 +101,7 @@ export default function NewBillPage() {
         category: "other",
         qty: Number(customQty),
         rate_inr: Number(customRate),
-        gst_pct: 0,
+        gst_pct: PROPERTY.defaultGstPct ?? 5,
         hsn_sac: PROPERTY.defaultHsn,
       });
     }
@@ -179,7 +179,8 @@ export default function NewBillPage() {
         sessionStorage.setItem("demo_bill_" + data.bill.id, JSON.stringify(data.bill));
       }
 
-      router.push(`/bills/${data.bill.id}`);
+      // Land on bill with PDF ready — staff can download / share WhatsApp
+      router.push(`/bills/${data.bill.id}?created=1`);
     } catch (e) {
       setError(e.message || "Failed");
       setSaving(false);
@@ -300,7 +301,7 @@ export default function NewBillPage() {
         </div>
 
         <div className="card" style={{ marginTop: 12 }}>
-          <strong>Add items</strong>
+          <strong>Add items from menu</strong>
           <div className="chip-row" style={{ marginTop: 12 }}>
             {[
               ["all", "All"],
@@ -317,6 +318,13 @@ export default function NewBillPage() {
               </button>
             ))}
           </div>
+
+          {catalog.length === 0 ? (
+            <p className="muted" style={{ marginTop: 12 }}>
+              Menu is loading or empty. You can still add a <strong>Custom line</strong> below,
+              or ask the owner to fill Admin → Menu.
+            </p>
+          ) : null}
 
           {filtered.map((item) => {
             const q = qtyMap[item.id] || 0;
@@ -396,8 +404,15 @@ export default function NewBillPage() {
       </main>
 
       <div className="fab-bar no-print">
-        <button className="btn btn-primary" type="button" onClick={createBill} disabled={saving}>
-          {saving ? "Creating…" : `Create bill · ${formatInr(preview.total)}`}
+        <button
+          className="btn btn-primary"
+          type="button"
+          onClick={createBill}
+          disabled={saving}
+        >
+          {saving
+            ? "Creating invoice…"
+            : `Generate tax invoice · ${formatInr(preview.total)}`}
         </button>
       </div>
     </div>

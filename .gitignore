@@ -10,3 +10,8 @@ node_modules
 supabase/.temp
 
 .vercel
+
+# Local scratch / unrelated docs
+tmp-bamboo-house/
+docs/test-estimate.pdf
+docs/*.docx

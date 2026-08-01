@@ -265,12 +265,12 @@ export default function AdminDashboard() {
     <div className="app-shell" style={{ maxWidth: 720 }}>
       <BrandHeader
         title="Owner dashboard"
-        subtitle="Invoices · staff · menu · reports · day-end"
+        subtitle="Billing · ops · reports"
         homeHref="/admin"
         right={
           <>
-            <Link href="/" className="btn btn-ghost">
-              Staff
+            <Link href="/" className="btn btn-ghost" style={{ minHeight: 36 }}>
+              Staff view
             </Link>
             <button className="btn btn-ghost" type="button" onClick={logout}>
               Logout
@@ -280,10 +280,48 @@ export default function AdminDashboard() {
       />
 
       <main className="page">
+        {/* Primary action */}
+        <Link
+          href="/bills/new"
+          className="card"
+          style={{
+            display: "block",
+            marginBottom: 12,
+            background: "var(--green-soft, #e8f5ee)",
+            border: "2px solid var(--green, #1a5c3a)",
+            textDecoration: "none",
+            color: "inherit",
+          }}
+        >
+          <div style={{ fontWeight: 800, fontSize: "1.05rem", color: "var(--green, #1a5c3a)" }}>
+            + Create tax invoice
+          </div>
+          <p className="muted" style={{ margin: "6px 0 0", fontSize: "0.88rem" }}>
+            Guest · villa · menu · PDF
+          </p>
+        </Link>
+
+        {/* Ops shortcuts — full-width wrap, not in header */}
+        <div className="chip-row" style={{ marginBottom: 12 }}>
+          {[
+            ["/inventory", "Inventory"],
+            ["/expenses", "Expenses"],
+            ["/leads", "Leads"],
+            ["/guests", "Guests"],
+            ["/attendance", "Attendance"],
+            ["/reports", "Reports PDF/Excel"],
+          ].map(([href, label]) => (
+            <Link key={href} href={href} className="chip" style={{ textDecoration: "none" }}>
+              {label}
+            </Link>
+          ))}
+        </div>
+
+        {/* Admin tabs */}
         <div className="chip-row">
           {[
             ["invoices", "Invoices"],
-            ["reports", "Reports"],
+            ["reports", "Billing Excel"],
             ["dayend", "Day-end"],
             ["catalog", "Menu"],
             ["staff", "Staff"],

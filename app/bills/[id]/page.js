@@ -12,11 +12,81 @@ import { amountDue, buildUpiUri } from "@/lib/upi";
 export default function BillDetailPage() {
   const { id } = useParams();
   const router = useRouter();
+  const [justCreated, setJustCreated] = useState(false);
   const [bill, setBill] = useState(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [emailTo, setEmailTo] = useState("");
   const [emailMsg, setEmailMsg] = useState("");
+  const [editLines, setEditLines] = useState(null); // null = not editing
+  const [lineMsg, setLineMsg] = useState("");
+
+  function startLineEdit() {
+    setLineMsg("");
+    setEditLines(
+      (bill?.bill_lines || []).map((l) => ({
+        catalog_item_id: l.catalog_item_id || null,
+        description: l.description || "",
+        qty: l.qty ?? 1,
+        rate_inr: l.rate_inr ?? 0,
+        gst_pct: l.gst_pct ?? 0,
+      }))
+    );
+  }
+
+  function changeLine(i, field, value) {
+    setEditLines((cur) => {
+      const next = [...cur];
+      next[i] = { ...next[i], [field]: value };
+      return next;
+    });
+  }
+
+  function dropLine(i) {
+    setEditLines((cur) => cur.filter((_, idx) => idx !== i));
+  }
+
+  function addLine() {
+    setEditLines((cur) => [
+      ...(cur || []),
+      { catalog_item_id: null, description: "", qty: 1, rate_inr: 0, gst_pct: 5 },
+    ]);
+  }
+
+  /**
+   * Saving creates a NEW version and regenerates the PDF; the old version stays
+   * in history. Rates are re-enforced from the live menu server-side.
+   */
+  async function saveLines() {
+    const clean = (editLines || []).filter(
+      (l) => String(l.description || "").trim() && Number(l.qty) > 0
+    );
+    if (!clean.length) {
+      setLineMsg("A bill needs at least one item.");
+      return;
+    }
+    setBusy(true);
+    setLineMsg("");
+    try {
+      const res = await fetch(`/api/bills/${bill.id}/edit`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          lines: clean,
+          change_note: "Line items corrected on web",
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not save");
+      setEditLines(null);
+      setLineMsg(`Saved as revision v${data.version}. PDF regenerated.`);
+      await load();
+    } catch (e) {
+      setLineMsg(e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function load() {
     setError("");
@@ -47,6 +117,12 @@ export default function BillDetailPage() {
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const q = new URLSearchParams(window.location.search);
+    setJustCreated(q.get("created") === "1");
   }, [id]);
 
   async function applyPayment({ payment_amount, payment_mode }) {
@@ -142,35 +218,72 @@ export default function BillDetailPage() {
         : due < Number(bill.grand_total) && Number(bill.amount_paid) > 0
           ? `Paid ${formatInr(bill.amount_paid)} · Due ${formatInr(due)}`
           : "Payment pending",
-      pdfLink ? `PDF: ${pdfLink}` : "",
-      invoiceLink ? `View: ${invoiceLink}` : "",
-      upi ? `Pay UPI: ${PROPERTY.upi || ""}` : PROPERTY.upi ? `UPI: ${PROPERTY.upi}` : "",
+      // ONE link only. The guest needs the invoice, not a menu of ways to reach it.
+      pdfLink ? `Invoice PDF: ${pdfLink}` : invoiceLink ? `Invoice: ${invoiceLink}` : "",
+      PROPERTY.upi ? `UPI: ${PROPERTY.upi}` : "",
       PROPERTY.phone ? `Call: ${PROPERTY.phone}` : "",
     ]
       .filter(Boolean)
       .join("\n");
   }, [bill, due, pdfLink, invoiceLink]);
 
+  /**
+   * Share the invoice as ONE attached PDF.
+   *
+   * Order of preference:
+   *  1. Attach the actual PDF file (phones) — guest gets a document, no links.
+   *  2. Text with a single link (desktop, where file share is unavailable).
+   *
+   * Never pass `url` alongside `text`: WhatsApp appends it, which is what used
+   * to produce a duplicate copy of the link in the message.
+   */
   async function shareWhatsApp() {
-    const text = encodeURIComponent(waText);
     const phone = (bill.guest_phone || "").replace(/\D/g, "");
-    const waUrl = phone
-      ? `https://wa.me/91${phone.slice(-10)}?text=${text}`
-      : `https://wa.me/?text=${text}`;
+    const caption =
+      `*${PROPERTY.name}*\n` +
+      `Invoice ${bill.bill_no}${bill.version > 1 ? ` (Rev. ${bill.version})` : ""}\n` +
+      `${bill.guest_name} · ${bill.villa}\n` +
+      `*Total: ${formatInr(bill.grand_total)}*` +
+      (bill.status === "paid"
+        ? `\nPaid via ${String(bill.payment_mode || "").toUpperCase()}`
+        : "");
 
-    if (navigator.share) {
+    // 1. Attach the PDF itself
+    if (pdfLink && typeof navigator !== "undefined" && navigator.canShare) {
       try {
-        await navigator.share({
-          title: `${PROPERTY.name} ${bill.bill_no}`,
-          text: waText,
-          url: pdfLink || invoiceLink,
-        });
-        return;
+        setBusy(true);
+        const res = await fetch(pdfLink);
+        if (res.ok) {
+          const blob = await res.blob();
+          const file = new File(
+            [blob],
+            `${String(bill.bill_no).replace(/\//g, "-")}.pdf`,
+            { type: "application/pdf" }
+          );
+          if (navigator.canShare({ files: [file] })) {
+            await navigator.share({
+              files: [file],
+              title: `${PROPERTY.name} ${bill.bill_no}`,
+              text: caption,
+            });
+            return;
+          }
+        }
       } catch {
-        /* cancelled */
+        /* cancelled, or file share unsupported — fall through to link */
+      } finally {
+        setBusy(false);
       }
     }
-    window.open(waUrl, "_blank");
+
+    // 2. Fall back to a message with exactly one link
+    const text = encodeURIComponent(waText);
+    window.open(
+      phone
+        ? `https://wa.me/91${phone.slice(-10)}?text=${text}`
+        : `https://wa.me/?text=${text}`,
+      "_blank"
+    );
   }
 
   async function sendEmail() {
@@ -329,37 +442,187 @@ export default function BillDetailPage() {
             </p>
           ) : null}
 
-          <table>
-            <thead>
-              <tr>
-                <th>Item</th>
-                <th className="num">HSN</th>
-                <th className="num">Qty</th>
-                <th className="num">Rate</th>
-                <th className="num">Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              {lines.map((l) => (
-                <tr key={l.id || l.description + l.sort_order}>
-                  <td>
-                    {l.description}
-                    {l.gst_pct ? (
-                      <div style={{ fontSize: "0.75rem", color: "#888" }}>
-                        GST {l.gst_pct}%
-                      </div>
-                    ) : null}
-                  </td>
-                  <td className="num" style={{ fontSize: "0.8rem" }}>
-                    {l.hsn_sac || PROPERTY.defaultHsn}
-                  </td>
-                  <td className="num">{l.qty}</td>
-                  <td className="num">{formatInrExact(l.rate_inr)}</td>
-                  <td className="num">{formatInrExact(l.line_total)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          {editLines === null ? (
+            <>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Item</th>
+                    <th className="num">HSN</th>
+                    <th className="num">Qty</th>
+                    <th className="num">Rate</th>
+                    <th className="num">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {lines.map((l) => (
+                    <tr key={l.id || l.description + l.sort_order}>
+                      <td>
+                        {l.description}
+                        {l.gst_pct ? (
+                          <div style={{ fontSize: "0.75rem", color: "#888" }}>
+                            GST {l.gst_pct}%
+                          </div>
+                        ) : null}
+                      </td>
+                      <td className="num" style={{ fontSize: "0.8rem" }}>
+                        {l.hsn_sac || PROPERTY.defaultHsn}
+                      </td>
+                      <td className="num">{l.qty}</td>
+                      <td className="num">{formatInrExact(l.rate_inr)}</td>
+                      <td className="num">{formatInrExact(l.line_total)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {bill.status !== "void" ? (
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={startLineEdit}
+                  style={{ marginTop: 8, fontSize: "0.85rem" }}
+                >
+                  ✏️ Correct line items
+                </button>
+              ) : null}
+            </>
+          ) : (
+            <div
+              style={{
+                background: "#FBF8F2",
+                border: "1px solid #E7EFEC",
+                borderRadius: 8,
+                padding: 10,
+              }}
+            >
+              <strong style={{ fontSize: "0.9rem" }}>Correcting line items</strong>
+              <p
+                style={{ fontSize: "0.8rem", color: "#666", margin: "4px 0 10px" }}
+              >
+                Saving creates a new revision — the current version is kept in
+                history. Menu rates are re-applied automatically.
+              </p>
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ minWidth: 420 }}>
+                  <thead>
+                    <tr>
+                      <th>Item</th>
+                      <th className="num" style={{ width: 60 }}>
+                        Qty
+                      </th>
+                      <th className="num" style={{ width: 90 }}>
+                        Rate
+                      </th>
+                      <th className="num" style={{ width: 80 }}>
+                        Amount
+                      </th>
+                      <th style={{ width: 30 }} />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {editLines.map((l, i) => (
+                      <tr key={i}>
+                        <td>
+                          <input
+                            value={l.description}
+                            onChange={(e) =>
+                              changeLine(i, "description", e.target.value)
+                            }
+                            placeholder="Item name"
+                            style={{ width: "100%" }}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            step="any"
+                            value={l.qty}
+                            onChange={(e) => changeLine(i, "qty", e.target.value)}
+                            style={{ width: "100%" }}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            step="any"
+                            value={l.rate_inr}
+                            onChange={(e) =>
+                              changeLine(i, "rate_inr", e.target.value)
+                            }
+                            style={{ width: "100%" }}
+                          />
+                        </td>
+                        <td className="num">
+                          {formatInrExact(
+                            (Number(l.qty) || 0) * (Number(l.rate_inr) || 0)
+                          )}
+                        </td>
+                        <td>
+                          <button
+                            type="button"
+                            onClick={() => dropLine(i)}
+                            title="Remove"
+                            style={{
+                              background: "none",
+                              border: "none",
+                              color: "#C2562A",
+                              cursor: "pointer",
+                              fontSize: "1rem",
+                            }}
+                          >
+                            ×
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div style={{ fontSize: "0.85rem", marginTop: 8 }}>
+                New subtotal:{" "}
+                <strong>
+                  {formatInrExact(
+                    editLines.reduce(
+                      (s, l) =>
+                        s + (Number(l.qty) || 0) * (Number(l.rate_inr) || 0),
+                      0
+                    )
+                  )}
+                </strong>{" "}
+                <span style={{ color: "#888" }}>
+                  (was {formatInrExact(bill.subtotal)})
+                </span>
+              </div>
+              <div
+                style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}
+              >
+                <button type="button" className="btn btn-ghost" onClick={addLine}>
+                  + Add item
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={saveLines}
+                  disabled={busy}
+                >
+                  {busy ? "Saving…" : "Save as new revision"}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={() => setEditLines(null)}
+                  disabled={busy}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+          {lineMsg ? (
+            <p style={{ fontSize: "0.85rem", color: "#1F4B43", marginTop: 8 }}>
+              {lineMsg}
+            </p>
+          ) : null}
 
           <div className="totals" style={{ borderTop: "none", marginTop: 0 }}>
             <div className="line">
@@ -402,15 +665,37 @@ export default function BillDetailPage() {
         </div>
 
         <div className="no-print" style={{ marginTop: 16, display: "grid", gap: 10 }}>
-          <button className="btn btn-primary" type="button" onClick={printBill}>
-            Print / Save PDF
-          </button>
-          <button className="btn btn-secondary" type="button" onClick={shareWhatsApp}>
-            Share on WhatsApp (PDF link)
-          </button>
-          <a className="btn btn-secondary" href={`/api/bills/${bill.id}/pdf`}>
-            Download PDF
+          {justCreated ? (
+            <div
+              className="card"
+              style={{
+                background: "var(--green-soft, #e8f5ee)",
+                border: "1px solid var(--green, #1a5c3a)",
+                marginBottom: 4,
+              }}
+            >
+              <strong style={{ color: "var(--green, #1a5c3a)" }}>
+                Invoice created
+              </strong>
+              <p className="muted" style={{ margin: "6px 0 0", fontSize: "0.9rem" }}>
+                Open the PDF, then share it on WhatsApp with the guest.
+              </p>
+            </div>
+          ) : null}
+          <a
+            className="btn btn-primary"
+            href={`/api/bills/${bill.id}/pdf`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Open / download tax invoice PDF
           </a>
+          <button className="btn btn-secondary" type="button" onClick={shareWhatsApp}>
+            Share on WhatsApp
+          </button>
+          <button className="btn btn-ghost" type="button" onClick={printBill}>
+            Print this page
+          </button>
 
           <PaymentActions bill={bill} busy={busy} onPaid={applyPayment} />
 

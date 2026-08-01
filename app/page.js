@@ -17,7 +17,17 @@ export default function HomePage() {
   const [demo, setDemo] = useState(false);
   const [search, setSearch] = useState("");
   const [staffName, setStaffName] = useState("");
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [denied, setDenied] = useState(false);
   const date = todayIst();
+
+  useEffect(() => {
+    try {
+      setDenied(new URLSearchParams(window.location.search).get("denied") === "1");
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   useEffect(() => {
     try {
@@ -29,6 +39,7 @@ export default function HomePage() {
       .then((r) => r.json())
       .then((d) => {
         if (d.name) setStaffName(d.name);
+        setIsAdmin(d.role === "admin");
       })
       .catch(() => {});
   }, []);
@@ -110,6 +121,86 @@ export default function HomePage() {
             </p>
           </div>
         ) : null}
+
+        {denied ? (
+          <div className="card" style={{ marginBottom: 12, background: "#FBF8F2" }}>
+            <strong style={{ color: "#C2562A" }}>Owner access only</strong>
+            <p className="muted" style={{ margin: "6px 0 0", fontSize: "0.9rem" }}>
+              That section needs the owner PIN. You have Bills and Purchases.
+            </p>
+          </div>
+        ) : null}
+
+        <Link
+          href="/bills/new"
+          className="card"
+          style={{
+            display: "block",
+            marginBottom: 14,
+            background: "var(--green-soft, #e8f5ee)",
+            border: "2px solid var(--green, #1a5c3a)",
+            textDecoration: "none",
+            color: "inherit",
+          }}
+        >
+          <div style={{ fontWeight: 800, fontSize: "1.1rem", color: "var(--green, #1a5c3a)" }}>
+            + Create tax invoice
+          </div>
+          <p className="muted" style={{ margin: "6px 0 0", fontSize: "0.9rem" }}>
+            Guest · villa · menu items · PDF for WhatsApp
+          </p>
+        </Link>
+
+        {/* Staff see Bills + Purchases only. Owner sees the full module. */}
+        {isAdmin ? (
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: 10,
+              marginBottom: 14,
+            }}
+          >
+            <Link href="/inventory" className="btn btn-secondary" style={{ textAlign: "center" }}>
+              Inventory
+            </Link>
+            <Link href="/attendance" className="btn btn-secondary" style={{ textAlign: "center" }}>
+              Attendance
+            </Link>
+            <Link href="/expenses" className="btn btn-secondary" style={{ textAlign: "center" }}>
+              Expenses
+            </Link>
+            <Link href="/guests" className="btn btn-secondary" style={{ textAlign: "center" }}>
+              Guests
+            </Link>
+            <Link href="/leads" className="btn btn-secondary" style={{ textAlign: "center" }}>
+              Leads
+            </Link>
+            <Link href="/reports" className="btn btn-secondary" style={{ textAlign: "center" }}>
+              Reports
+            </Link>
+          </div>
+        ) : (
+          <Link
+            href="/expenses"
+            className="card"
+            style={{
+              display: "block",
+              marginBottom: 14,
+              background: "#FBF8F2",
+              border: "2px solid #C2562A",
+              textDecoration: "none",
+              color: "inherit",
+            }}
+          >
+            <div style={{ fontWeight: 800, fontSize: "1.1rem", color: "#C2562A" }}>
+              + Purchase / expense
+            </div>
+            <p className="muted" style={{ margin: "6px 0 0", fontSize: "0.9rem" }}>
+              Supplier invoice · itemised · GST
+            </p>
+          </Link>
+        )}
 
         <div className="stat-grid">
           <div className="stat">

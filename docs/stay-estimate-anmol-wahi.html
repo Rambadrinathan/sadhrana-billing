@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Stay Estimate — Mr Anmol Wahi — Sadhrana Bagh</title>
+<style>
+  @import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap");
+
+  /* ========== PAGE / PRINT ========== */
+  @page { size: A4; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 210mm;
+    height: 297mm;
+    background: #FBF8F2;
+    color: #22201E;
+    font-family: Inter, "Segoe UI", system-ui, sans-serif;
+    font-size: 11.5px;
+    line-height: 1.45;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .page {
+    width: 210mm;
+    height: 297mm;
+    min-height: 297mm;
+    max-height: 297mm;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: #FBF8F2;
+  }
+
+  /* ========== TYPE ========== */
+  .serif {
+    font-family: "Cormorant Garamond", "Playfair Display", Georgia, "Times New Roman", serif;
+  }
+  .money {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+    text-align: right;
+    white-space: nowrap;
+  }
+  .label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #6B6B66;
+  }
+  .hairline {
+    border: none;
+    border-top: 1px solid #DDD7CC;
+    margin: 0;
+  }
+  .hairline-double {
+    border: none;
+    border-top: 1px solid #DDD7CC;
+    border-bottom: 1px solid #DDD7CC;
+    height: 3px;
+    background: transparent;
+  }
+
+  /* ========== 1. HEADER ========== */
+  .header {
+    flex: 0 0 90px;
+    background: #1F4B43;
+    color: #FBF8F2;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 14mm;
+    gap: 16px;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+  .mark {
+    width: 46px;
+    height: 46px;
+    border: 1.5px solid rgba(251, 248, 242, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .mark span {
+    font-family: "Cormorant Garamond", Georgia, serif;
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: #FBF8F2;
+  }
+  .wordmark {
+    font-family: "Cormorant Garamond", Georgia, serif;
+    font-size: 26px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    line-height: 1.1;
+    color: #FBF8F2;
+  }
+  .wordmark-sub {
+    font-family: Inter, sans-serif;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: rgba(251, 248, 242, 0.72);
+    margin-top: 4px;
+  }
+  .doc-title {
+    flex: 0 0 auto;
+    text-align: right;
+    max-width: 42%;
+  }
+  .doc-title h1 {
+    font-family: "Cormorant Garamond", Georgia, serif;
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    line-height: 1.05;
+    color: #FBF8F2;
+  }
+  .doc-title p {
+    margin-top: 6px;
+    font-size: 10.5px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(251, 248, 242, 0.7);
+  }
+
+  /* ========== 2. HERO ========== */
+  .hero {
+    flex: 0 0 165px;
+    position: relative;
+    overflow: hidden;
+    background: #1F4B43;
+  }
+  .hero img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    display: block;
+  }
+  .hero-caption {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(31, 75, 67, 0.88);
+    color: #FBF8F2;
+    padding: 8px 14mm;
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+
+  /* ========== BODY ========== */
+  .body {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    padding: 9mm 14mm 7mm;
+    gap: 7mm;
+    min-height: 0;
+  }
+
+  /* ========== 3. META ========== */
+  .meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10mm;
+  }
+  .meta-block {
+    background: #E7EFEC;
+    padding: 12px 14px 14px;
+  }
+  .meta-block .label { margin-bottom: 8px; }
+  .guest-name {
+    font-family: "Cormorant Garamond", Georgia, serif;
+    font-size: 24px;
+    font-weight: 600;
+    color: #1F4B43;
+    line-height: 1.15;
+    margin-bottom: 6px;
+  }
+  .meta-line {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 3px 0;
+    font-size: 11.5px;
+  }
+  .meta-line span:first-child { color: #6B6B66; }
+  .meta-line span:last-child {
+    font-weight: 500;
+    color: #22201E;
+    text-align: right;
+  }
+
+  /* ========== 4–5. TABLES ========== */
+  .section-head {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #1F4B43;
+    margin-bottom: 6px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  table th {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #6B6B66;
+    text-align: left;
+    padding: 6px 8px;
+    border-bottom: 1px solid #DDD7CC;
+    background: transparent;
+  }
+  table th.money,
+  table td.money { text-align: right; }
+  table td {
+    font-size: 11.5px;
+    padding: 7px 8px;
+    border-bottom: 1px solid #DDD7CC;
+    vertical-align: top;
+    color: #22201E;
+  }
+  table.stay td:nth-child(n+3) { white-space: nowrap; }
+  table.rates tbody tr:last-child td { border-bottom: 1px solid #DDD7CC; }
+
+  .totals {
+    margin-top: 4px;
+    margin-left: auto;
+    width: 58%;
+    max-width: 280px;
+  }
+  .totals .row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 16px;
+    padding: 4px 0;
+    font-size: 11.5px;
+  }
+  .totals .row .k { color: #6B6B66; }
+  .totals .row .v {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+    font-weight: 500;
+    color: #22201E;
+  }
+  .totals .row.discount .v { color: #6B6B66; font-weight: 400; }
+  .totals .rule {
+    border: none;
+    border-top: 1px solid #DDD7CC;
+    margin: 4px 0 2px;
+  }
+  .totals .grand {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 16px;
+    padding: 8px 0 6px;
+    border-top: 1px solid #DDD7CC;
+    border-bottom: 3px double #DDD7CC;
+    margin-top: 2px;
+  }
+  .totals .grand .k {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #1F4B43;
+  }
+  .totals .grand .v {
+    font-family: "Cormorant Garamond", Georgia, serif;
+    font-size: 20px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: #C2562A;
+    letter-spacing: 0.02em;
+  }
+
+  /* ========== 6. INCL / EXCL ========== */
+  .cols-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10mm;
+  }
+  .cols-2 ul {
+    list-style: none;
+    margin-top: 6px;
+  }
+  .cols-2 li {
+    position: relative;
+    padding: 2px 0 2px 12px;
+    font-size: 11.5px;
+    color: #22201E;
+  }
+  .cols-2 li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.55em;
+    width: 4px;
+    height: 4px;
+    background: #1F4B43;
+    border-radius: 50%;
+  }
+
+  /* ========== 7. NOTES ========== */
+  .notes {
+    flex: 1 1 auto;
+    min-height: 28px;
+  }
+  .notes p {
+    margin-top: 6px;
+    font-size: 11.5px;
+    color: #22201E;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: anywhere;
+  }
+
+  /* ========== 8. TERMS ========== */
+  .terms {
+    background: #E7EFEC;
+    padding: 10px 12px;
+    font-size: 10.5px;
+    line-height: 1.5;
+    color: #22201E;
+  }
+  .terms .label { margin-bottom: 5px; color: #1F4B43; }
+  .terms p + p { margin-top: 3px; }
+
+  /* ========== 9. FOOTER ========== */
+  .footer {
+    flex: 0 0 auto;
+    background: #1F4B43;
+    color: #FBF8F2;
+    padding: 10px 14mm 12px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 16px;
+    font-size: 10.5px;
+    line-height: 1.45;
+  }
+  .footer strong {
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+  .footer a {
+    color: #FBF8F2;
+    text-decoration: none;
+  }
+  .footer .right { text-align: right; }
+  .footer .legal {
+    grid-column: 1 / -1;
+    font-size: 10px;
+    opacity: 0.85;
+    border-top: 1px solid rgba(251, 248, 242, 0.2);
+    padding-top: 6px;
+    margin-top: 2px;
+  }
+
+  @media print {
+    html, body, .page {
+      width: 210mm;
+      height: 297mm;
+    }
+  }
+</style>
+</head>
+<body>
+
+<!--
+  ============================================================
+  DATA — edit these values when reusing for another guest
+  ============================================================
+  guest_name:        Mr Anmol Wahi
+  segment:           B2C
+  guests:            4
+  villas:            The Library, Bamboo House
+  villa_count:       2
+  check_in:          30 Jul 2026 (2:00 PM)
+  check_out:         01 Aug 2026 (11:00 AM)
+  nights:            2
+  rate_card:         Domestic · CP (breakfast included) · 1 Jul 2026 – 31 Mar 2027
+  rate_per_night:    14025
+  plan:              Domestic CP
+  discount:          0
+  subtotal:          56100   (= 14025 × 2 nights × 2 villas)
+  cgst_rate:         9%
+  sgst_rate:         9%
+  cgst:              5049
+  sgst:              5049
+  estimated_total:   66198
+  estimate_no:       SB-EST-2026-0731-001
+  date_issued:       31 Jul 2026
+  valid_until:       14 Aug 2026
+  place_of_supply:   Haryana (06)
+  hero:              HERO_IMAGE  (replace src on <img>)
+  ============================================================
+-->
+
+<div class="page">
+
+  <!-- 1. Header band -->
+  <header class="header">
+    <div class="brand">
+      <div class="mark" aria-hidden="true"><span>SB</span></div>
+      <div>
+        <div class="wordmark">SADHRANA BAGH</div>
+        <div class="wordmark-sub">Private Villas · Sadhrana, Gurugram</div>
+      </div>
+    </div>
+    <div class="doc-title">
+      <h1>STAY ESTIMATE</h1>
+      <p>Not a tax invoice</p>
+    </div>
+  </header>
+
+  <!-- 2. Hero strip -->
+  <div class="hero">
+    <img src="HERO_IMAGE" alt="Sadhrana Bagh villa" />
+    <div class="hero-caption">Sadhrana Bagh · Private villas · Gurugram countryside</div>
+  </div>
+
+  <div class="body">
+
+    <!-- 3. Meta -->
+    <section class="meta">
+      <div class="meta-block">
+        <div class="label">Prepared for</div>
+        <div class="guest-name serif">Mr Anmol Wahi</div>
+        <div class="meta-line"><span>Guests</span><span>4 (2 villas)</span></div>
+        <div class="meta-line"><span>Segment</span><span>B2C — Family / personal</span></div>
+      </div>
+      <div class="meta-block">
+        <div class="label">Document</div>
+        <div class="meta-line"><span>Estimate No.</span><span>SB-EST-2026-0731-001</span></div>
+        <div class="meta-line"><span>Date issued</span><span>31 Jul 2026</span></div>
+        <div class="meta-line"><span>Valid until</span><span>14 Aug 2026</span></div>
+        <div class="meta-line"><span>Rate card</span><span>Domestic · CP</span></div>
+      </div>
+    </section>
+
+    <!-- 4. Stay details -->
+    <section>
+      <div class="section-head">Stay details</div>
+      <table class="stay">
+        <thead>
+          <tr>
+            <th>Villa</th>
+            <th>Guests</th>
+            <th>Check-in</th>
+            <th>Check-out</th>
+            <th class="money">Nights</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>The Library</td>
+            <td>2</td>
+            <td>30 Jul 2026 · 2:00 PM</td>
+            <td>01 Aug 2026 · 11:00 AM</td>
+            <td class="money">2</td>
+          </tr>
+          <tr>
+            <td>Bamboo House</td>
+            <td>2</td>
+            <td>30 Jul 2026 · 2:00 PM</td>
+            <td>01 Aug 2026 · 11:00 AM</td>
+            <td class="money">2</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- 5. Rate breakdown -->
+    <section>
+      <div class="section-head">Rate breakdown</div>
+      <table class="rates">
+        <thead>
+          <tr>
+            <th>Villa</th>
+            <th>Plan</th>
+            <th class="money">Nights</th>
+            <th class="money">Rate / night (₹)</th>
+            <th class="money">Amount (₹)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>The Library</td>
+            <td>Domestic CP (breakfast included)</td>
+            <td class="money">2</td>
+            <td class="money">₹14,025</td>
+            <td class="money">₹28,050</td>
+          </tr>
+          <tr>
+            <td>Bamboo House</td>
+            <td>Domestic CP (breakfast included)</td>
+            <td class="money">2</td>
+            <td class="money">₹14,025</td>
+            <td class="money">₹28,050</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="totals">
+        <div class="row">
+          <span class="k">Subtotal</span>
+          <span class="v money">₹56,100</span>
+        </div>
+        <!-- Discount row: omit when zero; keep structure for reuse
+        <div class="row discount">
+          <span class="k">Discount</span>
+          <span class="v money">−₹0</span>
+        </div>
+        -->
+        <div class="row">
+          <span class="k">Taxable value</span>
+          <span class="v money">₹56,100</span>
+        </div>
+        <div class="row">
+          <span class="k">CGST 9%</span>
+          <span class="v money">₹5,049</span>
+        </div>
+        <div class="row">
+          <span class="k">SGST 9%</span>
+          <span class="v money">₹5,049</span>
+        </div>
+        <div class="grand">
+          <span class="k">Estimated total</span>
+          <span class="v money">₹66,198</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. Inclusions / Exclusions -->
+    <section class="cols-2">
+      <div>
+        <div class="section-head">Inclusions</div>
+        <ul>
+          <li>Accommodation in named villas</li>
+          <li>Daily breakfast (CP plan)</li>
+          <li>CGST 9% + SGST 9% as estimated</li>
+          <li>Estate grounds access as per house rules</li>
+        </ul>
+      </div>
+      <div>
+        <div class="section-head">Exclusions</div>
+        <ul>
+          <li>Lunch, dinner, high tea &amp; beverages</li>
+          <li>Extra beds, spa, experiences</li>
+          <li>Transport to / from the estate</li>
+          <li>Any services not listed above</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- 7. Notes -->
+    <section class="notes">
+      <div class="section-head">Notes</div>
+      <p>Two-villa stay for Mr Anmol Wahi — The Library and Bamboo House — from 30 July to 01 August 2026 (2 nights). Rate card: Domestic CP (breakfast included), valid 1 Jul 2026 – 31 Mar 2027. Per villa per night ₹14,025. This estimate is prepared for B2C personal travel and remains subject to villa availability at confirmation.</p>
+    </section>
+
+    <!-- 8. Terms -->
+    <section class="terms">
+      <div class="label">Terms</div>
+      <p>This document is an estimate only. It is not a confirmed booking and not a tax invoice.</p>
+      <p>Any commercial discounts are applied at quote stage and may change before confirmation. GST as applicable will appear on the final tax invoice under SAC 996311.</p>
+      <p>Cancellation: as per property policy advised at booking confirmation. Payment terms: as agreed at confirmation (typically advance to secure dates; balance before or on arrival).</p>
+      <p>Rate card window: 1 Jul 2026 – 31 Mar 2027 · Domestic · CP. Place of supply: Haryana (06).</p>
+    </section>
+
+  </div>
+
+  <!-- 9. Footer -->
+  <footer class="footer">
+    <div>
+      <strong>Call</strong> +91 92209 02135<br />
+      <strong>Email</strong> sadhranabagh@gmail.com
+    </div>
+    <div class="right">
+      <strong>Web</strong> <a href="https://www.sadhranabagh.com/">www.sadhranabagh.com</a><br />
+      <strong>Place of supply</strong> Haryana (06)
+    </div>
+    <div class="legal">
+      VJ Development Ventures LLP · GSTIN 06AAPFV9671F1ZJ · SAC 996311 · Sadhrana Bagh, Sadhrana, Gurugram
+    </div>
+  </footer>
+
+</div>
+
+<!--
+  ARITHMETIC CHECK (must reconcile)
+  --------------------------------
+  rate_per_night          = 14025
+  nights                  = 2
+  villas                  = 2
+  Library amount          = 14025 × 2 = 28050
+  Bamboo amount           = 14025 × 2 = 28050
+  subtotal                = 28050 + 28050 = 56100
+  discount                = 0
+  taxable                 = 56100 − 0 = 56100
+  CGST 9%                 = 56100 × 0.09 = 5049
+  SGST 9%                 = 56100 × 0.09 = 5049
+  tax total               = 5049 + 5049 = 10098
+  estimated_total         = 56100 + 10098 = 66198
+  OK
+-->
+
+</body>
+</html>
