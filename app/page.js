@@ -19,7 +19,29 @@ export default function HomePage() {
   const [staffName, setStaffName] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
   const [denied, setDenied] = useState(false);
+  const [att, setAtt] = useState(null);
   const date = todayIst();
+
+  // Today's attendance headline for the home tile
+  useEffect(() => {
+    fetch(`/api/attendance/day?date=${todayIst()}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!d?.entries) return;
+        const done = d.entries.filter((e) => e.saved && e.in && e.out).length;
+        const inNow = d.entries.filter((e) => e.saved && e.in && !e.out).length;
+        const absent = d.entries.filter(
+          (e) => e.saved && (e.status === "absent" || e.status === "leave")
+        ).length;
+        setAtt({
+          in: inNow,
+          done,
+          absent,
+          pending: d.entries.filter((e) => !e.saved).length,
+        });
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     try {
@@ -181,25 +203,50 @@ export default function HomePage() {
             </Link>
           </div>
         ) : (
-          <Link
-            href="/expenses"
-            className="card"
-            style={{
-              display: "block",
-              marginBottom: 14,
-              background: "#FBF8F2",
-              border: "2px solid #C2562A",
-              textDecoration: "none",
-              color: "inherit",
-            }}
-          >
-            <div style={{ fontWeight: 800, fontSize: "1.1rem", color: "#C2562A" }}>
-              + Purchase / expense
-            </div>
-            <p className="muted" style={{ margin: "6px 0 0", fontSize: "0.9rem" }}>
-              Supplier invoice · itemised · GST
-            </p>
-          </Link>
+          <>
+            <Link
+              href="/expenses"
+              className="card"
+              style={{
+                display: "block",
+                marginBottom: 12,
+                background: "#FBF8F2",
+                border: "2px solid #C2562A",
+                textDecoration: "none",
+                color: "inherit",
+              }}
+            >
+              <div style={{ fontWeight: 800, fontSize: "1.1rem", color: "#C2562A" }}>
+                + Purchase / expense
+              </div>
+              <p className="muted" style={{ margin: "6px 0 0", fontSize: "0.9rem" }}>
+                Supplier invoice · itemised · GST
+              </p>
+            </Link>
+
+            <Link
+              href="/attendance"
+              className="card"
+              style={{
+                display: "block",
+                marginBottom: 14,
+                background: "#F2F6F4",
+                border: "2px solid #2F6E60",
+                textDecoration: "none",
+                color: "inherit",
+              }}
+            >
+              <div style={{ fontWeight: 800, fontSize: "1.1rem", color: "#2F6E60" }}>
+                🕒 Attendance
+              </div>
+              <p className="muted" style={{ margin: "6px 0 0", fontSize: "0.9rem" }}>
+                {att
+                  ? `Today — in ${att.in} · done ${att.done} · absent ${att.absent}` +
+                    (att.pending ? ` · ${att.pending} awaited` : "")
+                  : "Clock the team in and out"}
+              </p>
+            </Link>
+          </>
         )}
 
         <div className="stat-grid">
