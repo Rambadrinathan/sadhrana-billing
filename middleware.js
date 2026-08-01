@@ -49,11 +49,11 @@ export function middleware(request) {
       "/leads",
       "/guests",
       "/inventory",
-      "/attendance",
       "/api/reports",
       "/api/leads",
       "/api/guests",
-      "/api/attendance",
+      // NOT /attendance or /api/attendance — Munish marks the team's
+      // attendance, so staff role must reach both.
       // NOT /api/catalog (bills need menu rates) and NOT /api/inventory
       // (the Purchases page needs the area list for its dropdown).
     ];
