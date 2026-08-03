@@ -35,7 +35,7 @@ insert into staff (name, active, sort_order) values
   ('Madan',    true, 10),
   ('Nikhil',   true, 20),
   ('Abhishek', true, 30),
-  ('Gumesh',   true, 40),
+  ('Gunesh',   true, 40),
   ('Binod',    true, 50),
   ('Renu',     true, 60),
   ('Manisha',  true, 70)
