@@ -1,3 +1,16 @@
+-- ============================================================
+-- ROSTER IS LOCKED. The Sadhrana Bagh team is exactly these 8:
+--   Madan, Nikhil, Abhishek, Gunesh, Binod, Renu, Manisha, Munish
+-- Do NOT add names here. Ram, 2026-08-04: "DO NOT add anyone else".
+--
+-- On 2026-08-04 a KarmYog Vatika seed was run against THIS database
+-- (bkpynofvujxocvzudjba) and inserted 3 staff who don't work here
+-- (Srimanto, Manoranjan, Arup) plus 9 plant SKUs into the F&B menu.
+-- They appeared on Munish's attendance board with IN buttons, and the
+-- plants were matchable by the bill OCR at up to Rs 16,000 a line.
+-- Confirm the Supabase project ref before running ANY seed.
+-- ============================================================
+
 -- Sadhrana Bagh — supervisor-marked attendance roster
 -- Munish marks the whole team daily; nobody self-punches.
 -- Run in Supabase SQL editor on project bkpynofvujxocvzudjba. Safe to re-run.
