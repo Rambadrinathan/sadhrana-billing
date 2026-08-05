@@ -930,6 +930,19 @@ export default function AdminDashboard() {
                       >
                         PDF
                       </a>
+                      {/* The photographed slip this bill was read from. The PDF
+                          above is our transcription; this is the evidence. */}
+                      {b.source_photo_url ? (
+                        <a
+                          className="btn btn-ghost"
+                          href={b.source_photo_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={{ minHeight: 36 }}
+                        >
+                          📎 Paper
+                        </a>
+                      ) : null}
                       <button
                         type="button"
                         className="btn btn-ghost"
