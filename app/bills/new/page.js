@@ -227,13 +227,13 @@ export default function NewBillPage() {
   return (
     <div className="app-shell">
       <BrandHeader
-        title="New checkout bill"
+        title="🍽️ F&B bill"
         subtitle={
           staffPick === "__others__" && staffOther.trim()
             ? `Staff: ${staffOther.trim()}`
             : staffPick && staffPick !== "__others__"
               ? `Staff: ${staffPick}`
-              : "F&B · massage · bonfire"
+              : "Food, drink, massage, bonfire · GST 5%"
         }
         right={
           <Link href="/" className="btn btn-ghost">

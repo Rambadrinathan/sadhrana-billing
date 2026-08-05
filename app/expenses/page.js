@@ -118,8 +118,8 @@ export default function ExpensesPage() {
   return (
     <div className="app-shell">
       <BrandHeader
-        title="Expenses"
-        subtitle="Spend + GST · Telegram /expense"
+        title="📦 Purchase / expense"
+        subtitle="Money going OUT · not a guest bill"
         right={
           <Link href="/" className="btn btn-ghost">
             Home

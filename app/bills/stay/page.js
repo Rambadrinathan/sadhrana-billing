@@ -143,8 +143,8 @@ export default function StayInvoicePage() {
   return (
     <div className="app-shell">
       <BrandHeader
-        title="Room / stay invoice"
-        subtitle="Accommodation · SAC 997212 · GST 18%"
+        title="🛏️ Room bill"
+        subtitle="Nights stayed · GST 18% · money coming IN"
         right={
           <Link href="/" className="btn btn-ghost">
             Cancel

@@ -166,10 +166,10 @@ export default function HomePage() {
           }}
         >
           <div style={{ fontWeight: 800, fontSize: "1.1rem", color: "var(--green, #1a5c3a)" }}>
-            + F&amp;B tax invoice
+            🍽️ F&amp;B BILL — food &amp; drink
           </div>
           <p className="muted" style={{ margin: "6px 0 0", fontSize: "0.9rem" }}>
-            Guest · villa · menu items · GST 5% · PDF for WhatsApp
+            Menu items the guest ate · GST 5% · PDF for WhatsApp
           </p>
         </Link>
 
@@ -187,10 +187,10 @@ export default function HomePage() {
           }}
         >
           <div style={{ fontWeight: 800, fontSize: "1.1rem", color: "var(--green, #1a5c3a)" }}>
-            + Room / stay invoice
+            🛏️ ROOM BILL — nights stayed
           </div>
           <p className="muted" style={{ margin: "6px 0 0", fontSize: "0.9rem" }}>
-            Nights priced from the rate card · GST 18% · company GSTIN supported
+            Villa · check-in to check-out · your agreed rate · GST 18%
           </p>
         </Link>
 
@@ -238,10 +238,10 @@ export default function HomePage() {
               }}
             >
               <div style={{ fontWeight: 800, fontSize: "1.1rem", color: "#C2562A" }}>
-                + Purchase / expense
+                📦 PURCHASE / EXPENSE — money we spent
               </div>
               <p className="muted" style={{ margin: "6px 0 0", fontSize: "0.9rem" }}>
-                Supplier invoice · itemised · GST
+                Photo of a voucher or supplier bill · not a guest invoice
               </p>
             </Link>
 
@@ -345,7 +345,7 @@ export default function HomePage() {
 
       <div className="fab-bar no-print">
         <Link href="/bills/new" className="btn btn-primary">
-          + New checkout bill
+          🍽️ New F&amp;B bill
         </Link>
       </div>
     </div>
