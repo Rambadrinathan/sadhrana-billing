@@ -24,6 +24,10 @@ export async function GET(request) {
       checkOut: p.get("check_out"),
       extraBeds: Number(p.get("extra_beds")) || 0,
       forcePeak: p.get("peak") === "1",
+      nightlyRate: Number(p.get("nightly_rate")) || null,
+      totalOverride: Number(p.get("total_override")) || null,
+      extraCharges: Number(p.get("extra_charges")) || 0,
+      extraChargesNote: p.get("extra_note") || "",
     });
     return Response.json(quote);
   } catch (e) {
@@ -51,6 +55,13 @@ export async function POST(request) {
       checkOut: body.check_out,
       extraBeds: Number(body.extra_beds) || 0,
       forcePeak: body.peak === true || body.peak === "1",
+      // The operator's own agreed pricing. Real bookings are negotiated, so the
+      // rate card is a starting point. Still priced SERVER-side from these
+      // inputs — the browser never posts a finished total.
+      nightlyRate: Number(body.nightly_rate) || null,
+      totalOverride: Number(body.total_override) || null,
+      extraCharges: Number(body.extra_charges) || 0,
+      extraChargesNote: body.extra_note || "",
     });
 
     const bill = await createBill({
@@ -87,8 +98,12 @@ export async function POST(request) {
       stay: {
         nights: stay.nights,
         nightCount: stay.nightCount,
+        rackTotal: stay.rackTotal,
         roomTotal: stay.roomTotal,
+        negotiated: stay.negotiated,
+        discount: stay.discount,
         extraBedTotal: stay.extraBedTotal,
+        extraCharges: stay.extraCharges,
       },
     });
   } catch (e) {

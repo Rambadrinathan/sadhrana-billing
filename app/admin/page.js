@@ -18,6 +18,9 @@ export default function AdminDashboard() {
   const [status, setStatus] = useState("");
   const [search, setSearch] = useState("");
   const [staffFilter, setStaffFilter] = useState("");
+  // Rooms and F&B are two different businesses at two different GST rates.
+  // "" = both, but the totals below always break them out separately.
+  const [kindFilter, setKindFilter] = useState("");
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState(null);
   const [from, setFrom] = useState("");
@@ -83,7 +86,39 @@ export default function AdminDashboard() {
     let list = bills;
     if (from) list = list.filter((b) => String(b.bill_date) >= from);
     if (to) list = list.filter((b) => String(b.bill_date) <= to);
+    if (kindFilter) {
+      // Rows written before the split default to restaurant.
+      list = list.filter((b) => (b.invoice_kind || "restaurant") === kindFilter);
+    }
     return list;
+  }, [bills, from, to, kindFilter]);
+
+  /**
+   * Rooms vs F&B, always separate.
+   * Mixing a 5% supply and an 18% supply into one revenue number is exactly the
+   * "all confused and jumbled up" problem — and it is also what the GST return
+   * splits on, so the two must never be added together in the UI.
+   */
+  const byKind = useMemo(() => {
+    const base = { taxable: 0, tax: 0, total: 0, count: 0 };
+    const out = {
+      accommodation: { ...base, label: "Rooms", gstPct: 18, sac: "997212" },
+      restaurant: { ...base, label: "F&B", gstPct: 5, sac: "996331" },
+    };
+    let dateList = bills;
+    if (from) dateList = dateList.filter((b) => String(b.bill_date) >= from);
+    if (to) dateList = dateList.filter((b) => String(b.bill_date) <= to);
+    for (const b of dateList) {
+      if (b.status === "void") continue;
+      const k = (b.invoice_kind || "restaurant") === "accommodation"
+        ? "accommodation"
+        : "restaurant";
+      out[k].taxable += Number(b.subtotal) || 0;
+      out[k].tax += Number(b.tax_total) || 0;
+      out[k].total += Number(b.grand_total) || 0;
+      out[k].count += 1;
+    }
+    return out;
   }, [bills, from, to]);
 
   const stats = useMemo(() => {
@@ -853,6 +888,84 @@ export default function AdminDashboard() {
                 </button>
               ))}
             </div>
+            {/* Rooms and F&B kept visibly apart — two supplies, two GST rates,
+                and the split the GST return is filed on. */}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                gap: 12,
+                marginBottom: 12,
+              }}
+            >
+              {[
+                ["accommodation", byKind.accommodation],
+                ["restaurant", byKind.restaurant],
+              ].map(([key, k]) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setKindFilter(kindFilter === key ? "" : key)}
+                  className="card"
+                  style={{
+                    margin: 0,
+                    textAlign: "left",
+                    cursor: "pointer",
+                    border:
+                      kindFilter === key
+                        ? "2px solid #1F4B43"
+                        : "1px solid #E6E9E3",
+                    background: kindFilter === key ? "#F2F7F4" : undefined,
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: "0.72rem",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.03em",
+                      color: "#5A6B5F",
+                    }}
+                  >
+                    {k.label} · SAC {k.sac} · {k.gstPct}%
+                  </div>
+                  <div style={{ fontSize: "1.3rem", fontWeight: 800 }}>
+                    {formatInr(k.total)}
+                  </div>
+                  <div className="muted" style={{ fontSize: "0.78rem" }}>
+                    {k.count} invoice(s) · taxable {formatInr(k.taxable)} · GST{" "}
+                    {formatInr(k.tax)}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "0.74rem",
+                      marginTop: 4,
+                      color: "#1F4B43",
+                      fontWeight: 600,
+                    }}
+                  >
+                    {kindFilter === key ? "Showing only these ✓" : "Tap to filter"}
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            <div className="chip-row">
+              {[
+                ["", "Rooms + F&B"],
+                ["accommodation", "🛏 Rooms only"],
+                ["restaurant", "🍽 F&B only"],
+              ].map(([key, label]) => (
+                <button
+                  key={key || "both"}
+                  type="button"
+                  className={`chip ${kindFilter === key ? "active" : ""}`}
+                  onClick={() => setKindFilter(key)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
             <div className="chip-row">
               {[
                 ["", "All"],
@@ -920,6 +1033,23 @@ export default function AdminDashboard() {
                       <div style={{ textAlign: "right" }}>
                         <div style={{ fontWeight: 800 }}>{formatInr(b.grand_total)}</div>
                         <span className={`badge badge-${b.status}`}>{b.status}</span>
+                        {/* Which business this invoice belongs to, on the row
+                            itself, so a mixed list is never ambiguous. */}
+                        <div
+                          style={{
+                            fontSize: "0.7rem",
+                            fontWeight: 700,
+                            marginTop: 4,
+                            color:
+                              (b.invoice_kind || "restaurant") === "accommodation"
+                                ? "#1F4B43"
+                                : "#C2562A",
+                          }}
+                        >
+                          {(b.invoice_kind || "restaurant") === "accommodation"
+                            ? "🛏 ROOM · 18%"
+                            : "🍽 F&B · 5%"}
+                        </div>
                       </div>
                     </div>
                     <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>

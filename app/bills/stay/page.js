@@ -23,6 +23,12 @@ export default function StayInvoicePage() {
   const [checkOut, setCheckOut] = useState("");
   const [extraBeds, setExtraBeds] = useState("0");
   const [peak, setPeak] = useState(false);
+  // Munish's own agreed pricing. Real bookings are negotiated, so the rate
+  // card is a starting point, not the final word.
+  const [nightlyRate, setNightlyRate] = useState("");
+  const [totalOverride, setTotalOverride] = useState("");
+  const [extraCharges, setExtraCharges] = useState("");
+  const [extraNote, setExtraNote] = useState("");
   const [guestName, setGuestName] = useState("");
   const [guestPhone, setGuestPhone] = useState("");
   const [guestEmail, setGuestEmail] = useState("");
@@ -58,6 +64,10 @@ export default function StayInvoicePage() {
       check_out: checkOut,
       extra_beds: String(Number(extraBeds) || 0),
       peak: peak ? "1" : "0",
+      nightly_rate: String(Number(nightlyRate) || 0),
+      total_override: String(Number(totalOverride) || 0),
+      extra_charges: String(Number(extraCharges) || 0),
+      extra_note: extraNote,
     });
     try {
       const res = await fetch(`/api/bills/stay?${p}`);
@@ -72,7 +82,7 @@ export default function StayInvoicePage() {
     } catch (e) {
       setQuoteErr(e.message || "Could not price this stay");
     }
-  }, [villa, checkIn, checkOut, extraBeds, peak]);
+  }, [villa, checkIn, checkOut, extraBeds, peak, nightlyRate, totalOverride, extraCharges, extraNote]);
 
   useEffect(() => {
     loadQuote();
@@ -103,6 +113,10 @@ export default function StayInvoicePage() {
           check_out: checkOut,
           extra_beds: Number(extraBeds) || 0,
           peak,
+          nightly_rate: Number(nightlyRate) || null,
+          total_override: Number(totalOverride) || null,
+          extra_charges: Number(extraCharges) || 0,
+          extra_note: extraNote.trim() || null,
           guest_name: guestName.trim(),
           guest_phone: guestPhone.trim() || null,
           guest_email: guestEmail.trim() || null,
@@ -181,6 +195,56 @@ export default function StayInvoicePage() {
           </div>
         </div>
 
+        {/* Munish's own pricing. The rate card fills the quote by default; these
+            override it when a rate was actually agreed with the guest. */}
+        <div className="card">
+          <div style={{ fontWeight: 800, marginBottom: 2 }}>Pricing</div>
+          <div className="muted" style={{ fontSize: "0.8rem", marginBottom: 10 }}>
+            Leave blank to use the rate card. Fill either one if a different price
+            was agreed — the rack rate is still recorded for comparison.
+          </div>
+          <div className="field">
+            <label>Agreed rate per night (₹)</label>
+            <input
+              value={nightlyRate}
+              onChange={(e) => setNightlyRate(e.target.value)}
+              inputMode="decimal"
+              placeholder="blank = rate card"
+            />
+          </div>
+          <div className="field">
+            <label>Or agreed total for the stay (₹, before GST)</label>
+            <input
+              value={totalOverride}
+              onChange={(e) => setTotalOverride(e.target.value)}
+              inputMode="decimal"
+              placeholder="blank = rate card"
+            />
+          </div>
+          <div className="field">
+            <label>Other charges (₹)</label>
+            <input
+              value={extraCharges}
+              onChange={(e) => setExtraCharges(e.target.value)}
+              inputMode="decimal"
+              placeholder="0"
+            />
+          </div>
+          <div className="field">
+            <label>What are the other charges for?</label>
+            <input
+              value={extraNote}
+              onChange={(e) => setExtraNote(e.target.value)}
+              placeholder="e.g. bonfire, transport, extra meals"
+            />
+          </div>
+          {nightlyRate && totalOverride ? (
+            <div style={{ fontSize: "0.8rem", color: "#C2562A", fontWeight: 600 }}>
+              Both filled — the agreed total wins and the per-night rate is ignored.
+            </div>
+          ) : null}
+        </div>
+
         {/* Night-by-night, so a stay spanning a weekend is visibly priced per
             night rather than nights x one rate. */}
         {quoteErr ? <div className="error">{quoteErr}</div> : null}
@@ -208,6 +272,43 @@ export default function StayInvoicePage() {
                 <span>{formatInr(n.rate)}</span>
               </div>
             ))}
+            {/* When a rate was negotiated, show what the card said and what is
+                actually being charged — the discount goes on the record. */}
+            {quote.negotiated ? (
+              <div
+                style={{
+                  marginTop: 8,
+                  padding: "8px 10px",
+                  borderRadius: 6,
+                  background: "#FDF3EC",
+                  border: "1px solid #E8C4A8",
+                  fontSize: "0.84rem",
+                }}
+              >
+                <div>
+                  Rate card would be <strong>{formatInr(quote.rackTotal)}</strong>
+                </div>
+                <div>
+                  Charging <strong>{formatInr(quote.roomTotal)}</strong>
+                  {quote.discount > 0 ? (
+                    <span> · discount {formatInr(quote.discount)}</span>
+                  ) : null}
+                </div>
+              </div>
+            ) : null}
+            {quote.extraCharges > 0 ? (
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  fontSize: "0.88rem",
+                  padding: "3px 0",
+                }}
+              >
+                <span>{quote.extraChargesNote || "Other charges"}</span>
+                <span>{formatInr(quote.extraCharges)}</span>
+              </div>
+            ) : null}
             {quote.extraBedTotal > 0 ? (
               <div
                 style={{

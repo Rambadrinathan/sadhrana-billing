@@ -159,3 +159,73 @@ t("zero beds adds nothing", () =>
   assert.equal(buildStayLines({ villa: "Kerala House", checkIn: "2026-08-03", checkOut: "2026-08-04" }).extraBedTotal, 0));
 
 console.log("\n" + passed + " passed");
+
+// ---------------------------------------------------------------------------
+// Negotiated pricing. The rate card is a STARTING POINT — real bookings are
+// discounted or packaged, and the operator enters what was actually agreed.
+// Mirror of buildStayLines' override logic.
+// ---------------------------------------------------------------------------
+function priceWithOverride({ villa, checkIn, checkOut, nightlyRate, totalOverride, extraCharges = 0, extraBeds = 0 }) {
+  const p = priceNights({ villa, checkIn, checkOut });
+  const card = RATE_CARD.villas[villa];
+  const rack = p.total;
+  const aN = Number(nightlyRate) > 0 ? Number(nightlyRate) : null;
+  const aT = Number(totalOverride) > 0 ? Number(totalOverride) : null;
+  let amount = aT ? aT : aN ? aN * p.count : rack;
+  const roomOnly = amount;
+  let extraBedTotal = 0;
+  const beds = Math.max(0, Number(extraBeds) || 0);
+  if (beds > 0) {
+    const per = card.bedrooms > 5 ? RATE_CARD.extraBedAbove5 : RATE_CARD.extraBed5AndBelow;
+    extraBedTotal = per * beds * p.count;
+    amount += extraBedTotal;
+  }
+  const extras = Math.max(0, Number(extraCharges) || 0);
+  amount += extras;
+  const tax = Math.round(((amount * 18) / 100) * 100) / 100;
+  return {
+    rackTotal: rack, roomTotal: roomOnly, negotiated: Boolean(aT || aN),
+    discount: Math.max(0, rack - roomOnly), extraBedTotal, extraCharges: extras,
+    taxableValue: amount, taxTotal: tax, grandTotal: Math.round((amount + tax) * 100) / 100,
+    nightCount: p.count,
+  };
+}
+
+console.log("\n-- negotiated per-night rate --");
+// Thu+Fri+Sat at Beri = 227700 rack. Agreed 60000/night x 3 = 180000.
+const neg = priceWithOverride({ villa: "Beri House", checkIn: "2026-08-06", checkOut: "2026-08-09", nightlyRate: 60000 });
+t("agreed rate replaces the card", () => assert.equal(neg.roomTotal, 180000));
+t("rack rate is still recorded", () => assert.equal(neg.rackTotal, 227700));
+t("discount is computed, not hidden", () => assert.equal(neg.discount, 47700));
+t("flagged as negotiated", () => assert.equal(neg.negotiated, true));
+t("GST is on the AGREED value, not the rack", () => assert.equal(neg.taxTotal, 32400));
+t("grand total follows the agreed value", () => assert.equal(neg.grandTotal, 212400));
+
+console.log("-- negotiated package total --");
+const pkg = priceWithOverride({ villa: "Beri House", checkIn: "2026-08-06", checkOut: "2026-08-09", totalOverride: 200000 });
+t("package total is used as-is", () => assert.equal(pkg.roomTotal, 200000));
+t("tax is 18% of it", () => assert.equal(pkg.taxTotal, 36000));
+t("discount vs rack", () => assert.equal(pkg.discount, 27700));
+
+console.log("-- total wins over per-night when both given --");
+const both = priceWithOverride({ villa: "Beri House", checkIn: "2026-08-06", checkOut: "2026-08-09", nightlyRate: 60000, totalOverride: 150000 });
+t("agreed total takes precedence", () => assert.equal(both.roomTotal, 150000));
+
+console.log("-- no override = rate card, unchanged --");
+const plain = priceWithOverride({ villa: "Beri House", checkIn: "2026-08-06", checkOut: "2026-08-09" });
+t("falls back to the card", () => assert.equal(plain.roomTotal, 227700));
+t("not flagged negotiated", () => assert.equal(plain.negotiated, false));
+t("no discount", () => assert.equal(plain.discount, 0));
+
+console.log("-- other charges are taxed with the stay --");
+const extra = priceWithOverride({ villa: "Beri House", checkIn: "2026-08-06", checkOut: "2026-08-09", nightlyRate: 60000, extraCharges: 5000 });
+t("extras are in the taxable value", () => assert.equal(extra.taxableValue, 185000));
+t("and taxed at 18%", () => assert.equal(extra.taxTotal, 33300));
+
+console.log("-- rubbish overrides are ignored, never zero the invoice --");
+t("zero is ignored", () => assert.equal(priceWithOverride({ villa: "Beri House", checkIn: "2026-08-06", checkOut: "2026-08-09", nightlyRate: 0 }).roomTotal, 227700));
+t("negative is ignored", () => assert.equal(priceWithOverride({ villa: "Beri House", checkIn: "2026-08-06", checkOut: "2026-08-09", totalOverride: -5000 }).roomTotal, 227700));
+t("non-numeric is ignored", () => assert.equal(priceWithOverride({ villa: "Beri House", checkIn: "2026-08-06", checkOut: "2026-08-09", nightlyRate: "abc" }).roomTotal, 227700));
+t("negative extras never reduce the bill", () => assert.equal(priceWithOverride({ villa: "Beri House", checkIn: "2026-08-06", checkOut: "2026-08-09", extraCharges: -9999 }).taxableValue, 227700));
+
+console.log("\n" + passed + " passed (incl. negotiated pricing)");
