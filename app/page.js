@@ -166,10 +166,31 @@ export default function HomePage() {
           }}
         >
           <div style={{ fontWeight: 800, fontSize: "1.1rem", color: "var(--green, #1a5c3a)" }}>
-            + Create tax invoice
+            + F&amp;B tax invoice
           </div>
           <p className="muted" style={{ margin: "6px 0 0", fontSize: "0.9rem" }}>
-            Guest · villa · menu items · PDF for WhatsApp
+            Guest · villa · menu items · GST 5% · PDF for WhatsApp
+          </p>
+        </Link>
+
+        {/* Rooms are the bigger revenue line and used to go to the accountant. */}
+        <Link
+          href="/bills/stay"
+          className="card"
+          style={{
+            display: "block",
+            marginBottom: 14,
+            background: "var(--green-soft, #e8f5ee)",
+            border: "2px solid var(--green, #1a5c3a)",
+            textDecoration: "none",
+            color: "inherit",
+          }}
+        >
+          <div style={{ fontWeight: 800, fontSize: "1.1rem", color: "var(--green, #1a5c3a)" }}>
+            + Room / stay invoice
+          </div>
+          <p className="muted" style={{ margin: "6px 0 0", fontSize: "0.9rem" }}>
+            Nights priced from the rate card · GST 18% · company GSTIN supported
           </p>
         </Link>
 

@@ -46,6 +46,12 @@ export function middleware(request) {
     const ownerOnly = [
       "/admin",
       "/reports",
+      // Month-end shows total revenue, GST and net — owner numbers. Its data API
+      // lives under /api/reports and is already owner-only, so leaving the page
+      // open to staff would render it and then 403 every figure on it.
+      // If Munish should see his own attendance + expenses month view, that wants
+      // a separate staff-scoped page WITHOUT the revenue block, not this one.
+      "/month",
       "/leads",
       "/guests",
       "/inventory",

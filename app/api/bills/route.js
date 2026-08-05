@@ -88,6 +88,13 @@ export async function POST(request) {
       gst_applied: body.gst_applied !== false,
       created_by,
       amount_paid,
+      // B2B. createBill validates the GSTIN (including its check digit) and
+      // rejects the bill rather than printing a number that would fail the
+      // customer's input-credit claim.
+      buyer_company: body.buyer_company || null,
+      buyer_gstin: body.buyer_gstin || null,
+      buyer_address: body.buyer_address || null,
+      invoice_kind: body.invoice_kind || "restaurant",
     });
 
     // Generate + store PDF (logo, GST invoice)
@@ -103,6 +110,10 @@ export async function POST(request) {
       pdf_url: stored.pdfUrl || stored.bill?.pdf_url || null,
     });
   } catch (e) {
-    return Response.json({ error: e.message || "Failed" }, { status: 500 });
+    // A rejected GSTIN or missing company name is the operator's input, not a
+    // server fault — 400 so the form shows the reason instead of "server error".
+    const msg = e.message || "Failed";
+    const isInput = /GSTIN|company name|guest name|line item|state code/i.test(msg);
+    return Response.json({ error: msg }, { status: isInput ? 400 : 500 });
   }
 }

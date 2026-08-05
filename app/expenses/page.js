@@ -272,17 +272,60 @@ export default function ExpensesPage() {
                   >
                     🗑 Delete
                   </button>
-                  {r.invoice_pdf_url ? (
-                    <a
-                      href={r.invoice_pdf_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      style={{ fontSize: "0.85rem", marginLeft: "auto" }}
-                    >
-                      Invoice file
-                    </a>
-                  ) : null}
                 </div>
+
+                {/* The photographed paper, shown — not hidden behind a text
+                    link. This entry is a transcription of it, so it must be
+                    visible next to the numbers to be checkable at a glance. */}
+                {r.invoice_pdf_url ? (
+                  <a
+                    href={r.invoice_pdf_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    title="Open the full photo"
+                    style={{
+                      display: "block",
+                      marginTop: 10,
+                      textDecoration: "none",
+                    }}
+                  >
+                    <img
+                      src={r.invoice_pdf_url}
+                      alt="Photo of the paper this entry was read from"
+                      style={{
+                        width: "100%",
+                        maxWidth: 320,
+                        maxHeight: 220,
+                        objectFit: "cover",
+                        objectPosition: "top",
+                        borderRadius: 8,
+                        border: "1.5px solid #D8DCD5",
+                        display: "block",
+                      }}
+                    />
+                    <span
+                      style={{
+                        fontSize: "0.78rem",
+                        color: "#5A6B5F",
+                        display: "block",
+                        marginTop: 4,
+                      }}
+                    >
+                      📎 Paper on file — tap to open full size
+                    </span>
+                  </a>
+                ) : (
+                  <div
+                    style={{
+                      marginTop: 10,
+                      fontSize: "0.78rem",
+                      color: "#C2562A",
+                      fontWeight: 600,
+                    }}
+                  >
+                    ⚠️ No photo on file for this entry
+                  </div>
+                )}
 
                 {openId === r.id ? (
                   <ExpenseLines

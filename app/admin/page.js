@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatInr, PROPERTY, CATEGORY_LABELS } from "@/lib/config";
@@ -309,6 +309,7 @@ export default function AdminDashboard() {
             ["/leads", "Leads"],
             ["/guests", "Guests"],
             ["/attendance", "Attendance"],
+            ["/month", "📊 Month end"],
             ["/reports", "Reports PDF/Excel"],
           ].map(([href, label]) => (
             <Link key={href} href={href} className="chip" style={{ textDecoration: "none" }}>
@@ -321,6 +322,7 @@ export default function AdminDashboard() {
         <div className="chip-row">
           {[
             ["invoices", "Invoices"],
+            ["purchases", "Purchases"],
             ["reports", "Billing Excel"],
             ["dayend", "Day-end"],
             ["catalog", "Menu"],
@@ -818,6 +820,11 @@ export default function AdminDashboard() {
           </div>
         ) : null}
 
+        {/* Live purchases. Admin previously listed purchases ONLY in the deleted
+            audit trail, so a correctly-saved purchase appeared nowhere here and
+            read as "not saved". */}
+        {tab === "purchases" ? <PurchasesPanel /> : null}
+
         {tab === "invoices" ? (
           <>
             <input
@@ -934,13 +941,25 @@ export default function AdminDashboard() {
                           above is our transcription; this is the evidence. */}
                       {b.source_photo_url ? (
                         <a
-                          className="btn btn-ghost"
                           href={b.source_photo_url}
                           target="_blank"
                           rel="noreferrer"
-                          style={{ minHeight: 36 }}
+                          title="Open the original slip"
+                          style={{ lineHeight: 0 }}
                         >
-                          📎 Paper
+                          <img
+                            src={b.source_photo_url}
+                            alt="Original slip for this bill"
+                            style={{
+                              height: 36,
+                              width: 48,
+                              objectFit: "cover",
+                              objectPosition: "top",
+                              borderRadius: 6,
+                              border: "1.5px solid #D8DCD5",
+                              display: "block",
+                            }}
+                          />
                         </a>
                       ) : null}
                       <button
@@ -979,6 +998,317 @@ export default function AdminDashboard() {
  * view; the row is kept here so the owner can check what was removed, by
  * whom, and put it back.
  */
+/**
+ * Live purchases with the photographed paper shown inline.
+ *
+ * The paper is the source of truth — the row is a transcription of it — so it is
+ * rendered as a visible thumbnail, not a text link. An entry with no photo says
+ * so in red rather than looking identical to one that has evidence behind it.
+ */
+function PurchasesPanel() {
+  const [rows, setRows] = useState(null);
+  const [err, setErr] = useState("");
+  const [editId, setEditId] = useState(null);
+  const [form, setForm] = useState({});
+  const [busy, setBusy] = useState(false);
+
+  const load = useCallback(() => {
+    return fetch("/api/expenses")
+      .then((r) => r.json())
+      .then((d) => setRows(Array.isArray(d) ? d : d.expenses || []))
+      .catch((e) => setErr(e.message || "Could not load purchases"));
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  function startEdit(r) {
+    setErr("");
+    setEditId(r.id);
+    setForm({
+      title: r.title || "",
+      expense_date: r.expense_date || "",
+      category: r.category || "other",
+      vendor: r.vendor || "",
+      total_inr: String(r.total_inr ?? ""),
+      gst_amount_inr: String(r.gst_amount_inr ?? "0"),
+    });
+  }
+
+  async function save(id) {
+    setBusy(true);
+    setErr("");
+    try {
+      const res = await fetch(`/api/expenses/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: form.title,
+          expense_date: form.expense_date,
+          category: form.category,
+          vendor: form.vendor,
+          total_inr: Number(form.total_inr) || 0,
+          gst_amount_inr: Number(form.gst_amount_inr) || 0,
+        }),
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || "Could not save");
+      setEditId(null);
+      await load();
+    } catch (e) {
+      setErr(e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function remove(r) {
+    // Soft delete — it lands in Deleted records and can be restored.
+    if (
+      !window.confirm(
+        `Delete "${r.title || "purchase"}" of ${formatInr(r.total_inr)}?\n\nIt moves to Deleted records and can be restored.`
+      )
+    ) {
+      return;
+    }
+    setBusy(true);
+    setErr("");
+    try {
+      const res = await fetch(`/api/expenses/${r.id}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: "Deleted from owner dashboard" }),
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || "Could not delete");
+      await load();
+    } catch (e) {
+      setErr(e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (err && !rows) return <div className="card">{err}</div>;
+  if (!rows) return <div className="card">Loading purchases…</div>;
+  if (!rows.length) return <div className="card">No purchases recorded yet.</div>;
+
+  const withPhoto = rows.filter((r) => r.invoice_pdf_url).length;
+
+  return (
+    <div className="card">
+      <div style={{ fontWeight: 800, marginBottom: 4 }}>
+        Purchases ({rows.length})
+      </div>
+      <div className="muted" style={{ fontSize: "0.82rem", marginBottom: 12 }}>
+        {withPhoto} of {rows.length} have the paper on file.
+      </div>
+      {rows.map((r) => (
+        <div
+          key={r.id}
+          style={{
+            borderTop: "1px solid #E6E9E3",
+            padding: "12px 0",
+            display: "flex",
+            gap: 12,
+            alignItems: "flex-start",
+          }}
+        >
+          {r.invoice_pdf_url ? (
+            <a href={r.invoice_pdf_url} target="_blank" rel="noreferrer">
+              <img
+                src={r.invoice_pdf_url}
+                alt="Photo of the purchase paper"
+                style={{
+                  width: 96,
+                  height: 96,
+                  objectFit: "cover",
+                  objectPosition: "top",
+                  borderRadius: 8,
+                  border: "1.5px solid #D8DCD5",
+                  display: "block",
+                }}
+              />
+            </a>
+          ) : (
+            <div
+              style={{
+                width: 96,
+                height: 96,
+                borderRadius: 8,
+                border: "1.5px dashed #C2562A",
+                color: "#C2562A",
+                fontSize: "0.7rem",
+                fontWeight: 700,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                textAlign: "center",
+                padding: 6,
+              }}
+            >
+              No photo
+            </div>
+          )}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            {editId === r.id ? (
+              <div style={{ display: "grid", gap: 6 }}>
+                <input
+                  className="search-input"
+                  value={form.title}
+                  placeholder="What was bought"
+                  onChange={(e) => setForm({ ...form, title: e.target.value })}
+                />
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  <input
+                    className="search-input"
+                    type="date"
+                    style={{ flex: "1 1 130px" }}
+                    value={form.expense_date}
+                    onChange={(e) =>
+                      setForm({ ...form, expense_date: e.target.value })
+                    }
+                  />
+                  <select
+                    className="search-input"
+                    style={{ flex: "1 1 130px" }}
+                    value={form.category}
+                    onChange={(e) =>
+                      setForm({ ...form, category: e.target.value })
+                    }
+                  >
+                    {["inventory", "fnb_ops", "utilities", "maintenance", "other"].map(
+                      (c) => (
+                        <option key={c} value={c}>
+                          {c}
+                        </option>
+                      )
+                    )}
+                  </select>
+                </div>
+                <input
+                  className="search-input"
+                  value={form.vendor}
+                  placeholder="Vendor (optional)"
+                  onChange={(e) => setForm({ ...form, vendor: e.target.value })}
+                />
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  <label style={{ flex: "1 1 130px", fontSize: "0.78rem" }}>
+                    Total ₹
+                    <input
+                      className="search-input"
+                      type="number"
+                      step="0.01"
+                      value={form.total_inr}
+                      onChange={(e) =>
+                        setForm({ ...form, total_inr: e.target.value })
+                      }
+                    />
+                  </label>
+                  <label style={{ flex: "1 1 130px", fontSize: "0.78rem" }}>
+                    of which GST ₹
+                    <input
+                      className="search-input"
+                      type="number"
+                      step="0.01"
+                      value={form.gst_amount_inr}
+                      onChange={(e) =>
+                        setForm({ ...form, gst_amount_inr: e.target.value })
+                      }
+                    />
+                  </label>
+                </div>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <button
+                    type="button"
+                    className="btn"
+                    disabled={busy}
+                    onClick={() => save(r.id)}
+                    style={{ minHeight: 36 }}
+                  >
+                    {busy ? "Saving…" : "Save"}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    onClick={() => setEditId(null)}
+                    style={{ minHeight: 36 }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div style={{ fontWeight: 700 }}>{r.title || "Purchase"}</div>
+                <div className="muted" style={{ fontSize: "0.82rem" }}>
+                  {r.expense_date} · {r.category}
+                  {r.vendor ? ` · ${r.vendor}` : ""}
+                </div>
+                <div style={{ fontWeight: 800, marginTop: 4 }}>
+                  {formatInr(r.total_inr)}
+                  {Number(r.gst_amount_inr) > 0 ? (
+                    <span className="muted" style={{ fontSize: "0.8rem" }}>
+                      {" "}
+                      (incl. GST {formatInr(r.gst_amount_inr)})
+                    </span>
+                  ) : null}
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 8,
+                    flexWrap: "wrap",
+                    marginTop: 8,
+                    alignItems: "center",
+                  }}
+                >
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    disabled={busy}
+                    onClick={() => startEdit(r)}
+                    style={{ minHeight: 34 }}
+                  >
+                    ✎ Edit
+                  </button>
+                  <a
+                    className="btn btn-ghost"
+                    href="/expenses"
+                    style={{ minHeight: 34 }}
+                  >
+                    Edit items
+                  </a>
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    disabled={busy}
+                    onClick={() => remove(r)}
+                    style={{ minHeight: 34, color: "#C2562A" }}
+                  >
+                    🗑 Delete
+                  </button>
+                  {r.invoice_pdf_url ? (
+                    <a
+                      href={r.invoice_pdf_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{ fontSize: "0.8rem" }}
+                    >
+                      Open full photo
+                    </a>
+                  ) : null}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function DeletedRecords() {
   const [data, setData] = useState(null);
   const [msg, setMsg] = useState("");

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { VILLAS, CATEGORY_LABELS, formatInr, PROPERTY } from "@/lib/config";
+import { validateGstin } from "@/lib/gstin";
 import BrandHeader from "@/components/BrandHeader";
 
 export default function NewBillPage() {
@@ -14,6 +15,10 @@ export default function NewBillPage() {
   const [guestName, setGuestName] = useState("");
   const [guestPhone, setGuestPhone] = useState("");
   const [guestEmail, setGuestEmail] = useState("");
+  const [isB2b, setIsB2b] = useState(false);
+  const [buyerCompany, setBuyerCompany] = useState("");
+  const [buyerGstin, setBuyerGstin] = useState("");
+  const [buyerAddress, setBuyerAddress] = useState("");
   const [notes, setNotes] = useState("");
   const [advance, setAdvance] = useState("");
   const [staffList, setStaffList] = useState([]);
@@ -124,6 +129,22 @@ export default function NewBillPage() {
     };
   }, [selectedLines]);
 
+  /**
+   * Check the GSTIN as it is typed, including the government check digit.
+   * Catching a typo here is the whole point: a wrong GSTIN on a printed invoice
+   * fails the customer's input-credit claim and comes back to us as a reissue.
+   */
+  const gstinCheck = useMemo(() => {
+    const raw = buyerGstin.trim();
+    if (!raw) return { bad: false, message: "" };
+    if (raw.length < 15) {
+      return { bad: false, message: `${raw.length}/15 characters` };
+    }
+    const v = validateGstin(raw);
+    if (!v.ok) return { bad: true, message: v.error };
+    return { bad: false, message: `✓ Valid · ${v.stateName}` };
+  }, [buyerGstin]);
+
   async function createBill() {
     setError("");
     const resolvedStaff =
@@ -146,6 +167,18 @@ export default function NewBillPage() {
       setError("Add at least one item (tap + on menu)");
       return;
     }
+    if (isB2b) {
+      if (!buyerCompany.trim()) {
+        setError("Company booking: enter the company name to bill to");
+        return;
+      }
+      // Refuse rather than print a GSTIN that would fail the customer's claim.
+      const v = validateGstin(buyerGstin);
+      if (!v.ok || v.empty) {
+        setError(v.empty ? "Company booking: enter the customer GSTIN" : v.error);
+        return;
+      }
+    }
     setSaving(true);
     try {
       try {
@@ -161,6 +194,10 @@ export default function NewBillPage() {
           guest_name: guestName.trim(),
           guest_phone: guestPhone.trim() || null,
           guest_email: guestEmail.trim() || null,
+          invoice_kind: "restaurant",
+          buyer_company: isB2b ? buyerCompany.trim() || null : null,
+          buyer_gstin: isB2b ? buyerGstin.trim() || null : null,
+          buyer_address: isB2b ? buyerAddress.trim() || null : null,
           notes: notes.trim() || null,
           lines: selectedLines,
           created_by: resolvedStaff,
@@ -281,6 +318,74 @@ export default function NewBillPage() {
               type="email"
             />
           </div>
+          {/* Corporate booking. Off by default — most guests pay personally and
+              a B2C invoice needs none of this. When on, the company becomes
+              "Buyer (Bill to)" and its GSTIN is printed on the invoice so the
+              customer can claim input credit. */}
+          <div className="field" style={{ gridColumn: "1 / -1" }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <input
+                type="checkbox"
+                checked={isB2b}
+                onChange={(e) => {
+                  setIsB2b(e.target.checked);
+                  if (!e.target.checked) {
+                    setBuyerCompany("");
+                    setBuyerGstin("");
+                    setBuyerAddress("");
+                  }
+                }}
+                style={{ width: 18, height: 18 }}
+              />
+              <span>Company booking — bill to a company with GSTIN</span>
+            </label>
+          </div>
+          {isB2b ? (
+            <>
+              <div className="field" style={{ gridColumn: "1 / -1" }}>
+                <label>Company name (Buyer — Bill to) *</label>
+                <input
+                  value={buyerCompany}
+                  onChange={(e) => setBuyerCompany(e.target.value)}
+                  placeholder="Registered name, as on their GST certificate"
+                />
+              </div>
+              <div className="field">
+                <label>Customer GSTIN *</label>
+                <input
+                  value={buyerGstin}
+                  onChange={(e) => setBuyerGstin(e.target.value.toUpperCase())}
+                  placeholder="06AAPFV9671F1ZJ"
+                  maxLength={15}
+                  style={{
+                    textTransform: "uppercase",
+                    borderColor: gstinCheck.bad ? "#C2562A" : undefined,
+                  }}
+                />
+                {/* Checked as it is typed, against the government check digit —
+                    a wrong GSTIN makes the customer's claim fail. */}
+                {gstinCheck.message ? (
+                  <span
+                    style={{
+                      fontSize: "0.78rem",
+                      color: gstinCheck.bad ? "#C2562A" : "#1F4B43",
+                      fontWeight: 600,
+                    }}
+                  >
+                    {gstinCheck.message}
+                  </span>
+                ) : null}
+              </div>
+              <div className="field">
+                <label>Company address (optional)</label>
+                <input
+                  value={buyerAddress}
+                  onChange={(e) => setBuyerAddress(e.target.value)}
+                  placeholder="Printed under the company name"
+                />
+              </div>
+            </>
+          ) : null}
           <div className="field">
             <label>Advance / amount paid now (₹)</label>
             <input

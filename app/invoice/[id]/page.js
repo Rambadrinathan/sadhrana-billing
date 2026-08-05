@@ -111,11 +111,31 @@ export default async function TaxInvoicePage({ params }) {
         <div className="tax-grid" style={{ borderTop: "none" }}>
           <div className="tax-box" style={{ gridColumn: "1 / -1" }}>
             <span className="muted">Buyer (Bill to)</span>
-            <strong className="block">{bill.guest_name}</strong>
+            {/* B2B: the registered company is the buyer and its GSTIN must be on
+                the face of the invoice, or the customer cannot claim input
+                credit. The guest's own name still appears, below. */}
+            <strong className="block">
+              {bill.buyer_company || bill.guest_name}
+            </strong>
+            {bill.buyer_address ? <div>{bill.buyer_address}</div> : null}
+            {bill.buyer_gstin ? (
+              <div>
+                <strong>GSTIN/UIN : {bill.buyer_gstin}</strong>
+              </div>
+            ) : null}
+            {bill.buyer_company && bill.guest_name ? (
+              <div className="muted">Guest: {bill.guest_name}</div>
+            ) : null}
             {bill.guest_phone ? <div>{bill.guest_phone}</div> : null}
             <div className="muted">
-              State: {PROPERTY.stateName}, Code: {PROPERTY.stateCode} · Place of Supply:{" "}
-              {PROPERTY.stateName}
+              State:{" "}
+              {bill.buyer_state_name
+                ? `${bill.buyer_state_name}, Code: ${bill.buyer_state_code}`
+                : `${PROPERTY.stateName}, Code: ${PROPERTY.stateCode}`}{" "}
+              {/* Place of supply is always where the property is — immovable
+                  property and restaurant service are both supplied here — so an
+                  out-of-state buyer is still CGST + SGST, never IGST. */}
+              · Place of Supply: {PROPERTY.stateName}
             </div>
           </div>
         </div>
@@ -226,6 +246,32 @@ export default async function TaxInvoicePage({ params }) {
           This is a Computer Generated Invoice · E. &amp; O.E.
         </div>
       </div>
+
+      {/* The handwritten slip this invoice was read from. `no-print` on purpose:
+          it is our internal evidence, not part of the guest's tax invoice. */}
+      {bill.source_photo_url ? (
+        <div className="actions no-print" style={{ display: "block" }}>
+          <strong style={{ display: "block", marginBottom: 8 }}>
+            📎 Original slip this bill was read from
+          </strong>
+          <a href={bill.source_photo_url} target="_blank" rel="noreferrer">
+            <img
+              src={bill.source_photo_url}
+              alt="Handwritten slip this invoice was read from"
+              style={{
+                width: "100%",
+                maxWidth: 420,
+                borderRadius: 8,
+                border: "1.5px solid #D8DCD5",
+                display: "block",
+              }}
+            />
+          </a>
+          <span className="muted" style={{ fontSize: "0.8rem" }}>
+            Tap to open full size · not printed on the guest invoice
+          </span>
+        </div>
+      ) : null}
 
       <script
         dangerouslySetInnerHTML={{
