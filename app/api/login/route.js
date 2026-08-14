@@ -1,31 +1,32 @@
-import { checkPin, authCookieHeaders } from "@/lib/auth";
+import { checkPin, authCookieHeaders, hasDistinctAdminPin } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request) {
   try {
     const body = await request.json();
-    const role = body?.role === "admin" ? "admin" : "staff";
+    const asked = body?.role === "admin" ? "admin" : "staff";
     const displayName = String(body?.name || body?.staff_name || "").trim();
-    const ok = checkPin(body?.pin, role);
-    if (!ok) {
-      if (role === "staff" && checkPin(body?.pin, "admin")) {
-        const headers = new Headers({ "Content-Type": "application/json" });
-        for (const c of authCookieHeaders(true, "admin", displayName || "Owner")) {
-          headers.append("Set-Cookie", c);
-        }
-        return new Response(JSON.stringify({ ok: true, role: "admin" }), {
-          status: 200,
-          headers,
-        });
-      }
+
+    // The owner's PIN identifies the owner, whichever way the toggle is set.
+    // Without this, typing the admin PIN while the form sits on its default
+    // "Staff" setting logs you in successfully AS STAFF — and the middleware
+    // then bounces you off /admin, which reads as "the PIN is not working".
+    // Only safe while the two PINs are distinct: if ADMIN_PIN is unset it
+    // falls back to MANAGER_PIN, and promoting then would make every staff
+    // login an owner login.
+    const adminPin = hasDistinctAdminPin() && checkPin(body?.pin, "admin");
+    const role = adminPin ? "admin" : asked;
+
+    if (!adminPin && !checkPin(body?.pin, role)) {
       return Response.json({ ok: false, error: "Wrong PIN" }, { status: 401 });
     }
+    const name = role === "admin" ? displayName || "Owner" : displayName;
     const headers = new Headers({ "Content-Type": "application/json" });
-    for (const c of authCookieHeaders(true, role, displayName)) {
+    for (const c of authCookieHeaders(true, role, name)) {
       headers.append("Set-Cookie", c);
     }
-    return new Response(JSON.stringify({ ok: true, role, name: displayName }), {
+    return new Response(JSON.stringify({ ok: true, role, name }), {
       status: 200,
       headers,
     });
