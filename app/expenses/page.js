@@ -3,16 +3,11 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import BrandHeader from "@/components/BrandHeader";
-import { formatInrExact } from "@/lib/config";
-
-const CATS = [
-  ["inventory", "Inventory / capex"],
-  ["fnb_ops", "F&B ops"],
-  ["utilities", "Utilities"],
-  ["maintenance", "Maintenance"],
-  ["payroll", "Payroll"],
-  ["other", "Other"],
-];
+import {
+  formatInrExact,
+  EXPENSE_CATEGORIES,
+  CATEGORY_LABELS,
+} from "@/lib/config";
 
 export default function ExpensesPage() {
   const [rows, setRows] = useState([]);
@@ -26,6 +21,8 @@ export default function ExpensesPage() {
     amount_inr: "",
     gst_amount_inr: "",
     vendor: "",
+    vendor_gstin: "",
+    vendor_invoice_no: "",
     location_id: "",
   });
 
@@ -87,6 +84,8 @@ export default function ExpensesPage() {
         body: JSON.stringify({
           title: form.title.trim(),
           category: form.category,
+        vendor_gstin: form.vendor_gstin,
+        vendor_invoice_no: form.vendor_invoice_no,
           amount_inr: amount,
           gst_amount_inr: gst,
           total_inr: amount + gst,
@@ -99,6 +98,8 @@ export default function ExpensesPage() {
       setForm({
         title: "",
         category: "other",
+        vendor_gstin: "",
+        vendor_invoice_no: "",
         amount_inr: "",
         gst_amount_inr: "",
         vendor: "",
@@ -172,9 +173,9 @@ export default function ExpensesPage() {
               value={form.category}
               onChange={(e) => setForm({ ...form, category: e.target.value })}
             >
-              {CATS.map(([id, lab]) => (
-                <option key={id} value={id}>
-                  {lab}
+              {EXPENSE_CATEGORIES.map((c) => (
+                <option key={c.key} value={c.key}>
+                  {c.label}
                 </option>
               ))}
             </select>
@@ -199,6 +200,31 @@ export default function ExpensesPage() {
               value={form.vendor}
               onChange={(e) => setForm({ ...form, vendor: e.target.value })}
             />
+          </div>
+          {/* Both optional. Most local suppliers have no GSTIN at all — but
+              without one, the GST on that purchase can never be claimed back,
+              so it is worth 5 seconds when the paper does show it. */}
+          <div className="row">
+            <div className="field">
+              <label>Vendor GSTIN (optional)</label>
+              <input
+                value={form.vendor_gstin}
+                onChange={(e) =>
+                  setForm({ ...form, vendor_gstin: e.target.value.toUpperCase() })
+                }
+                placeholder="06AAPFV9671F1ZJ"
+                autoCapitalize="characters"
+              />
+            </div>
+            <div className="field">
+              <label>Supplier bill no. (optional)</label>
+              <input
+                value={form.vendor_invoice_no}
+                onChange={(e) =>
+                  setForm({ ...form, vendor_invoice_no: e.target.value })
+                }
+              />
+            </div>
           </div>
           <button className="btn btn-primary" type="submit" disabled={busy}>
             Save expense
@@ -225,7 +251,7 @@ export default function ExpensesPage() {
               >
                 <div style={{ fontWeight: 700 }}>{r.title}</div>
                 <div className="muted" style={{ fontSize: "0.85rem" }}>
-                  {r.expense_date} · {r.category} ·{" "}
+                  {r.expense_date} · {CATEGORY_LABELS[r.category] || r.category} ·{" "}
                   {formatInrExact(r.total_inr)}
                   {r.vendor ? ` · ${r.vendor}` : ""}
                   {r.inv_locations?.name ? ` · ${r.inv_locations.name}` : ""}

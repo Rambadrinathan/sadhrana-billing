@@ -1,4 +1,4 @@
-import { isAuthed } from "@/lib/auth";
+import { isAuthed, getRole } from "@/lib/auth";
 import { PROPERTY } from "@/lib/config";
 import {
   buildInventoryReportPdf,
@@ -16,6 +16,7 @@ import {
   buildLeadsExcel,
 } from "@/lib/ops-reports-excel";
 import { listLocations } from "@/lib/inventory";
+import { buildGstPackExcel } from "@/lib/gst-pack-excel";
 
 export const dynamic = "force-dynamic";
 
@@ -69,6 +70,20 @@ export async function GET(request) {
           fname = "expenses";
           buf = await buildExpensesExcel({ from, to });
           break;
+        // The accountant's monthly pack. Owner-only: it carries every buyer's
+        // GSTIN and the property's whole tax position.
+        case "gst-pack":
+        case "gstpack": {
+          if (getRole() !== "admin") {
+            return Response.json(
+              { error: "Owner access required" },
+              { status: 403 }
+            );
+          }
+          fname = `gst-pack-${from || "start"}-to-${to || "end"}`;
+          buf = await buildGstPackExcel({ from, to });
+          break;
+        }
         case "attendance":
           fname = "attendance";
           buf = await buildAttendanceExcel({ date, from, to });
@@ -85,7 +100,7 @@ export async function GET(request) {
           return Response.json(
             {
               error:
-                "Excel not available for this type. Use type=inventory|expenses|attendance|guests|leads",
+                "Excel not available for this type. Use type=inventory|expenses|attendance|guests|leads|gst-pack",
             },
             { status: 400 }
           );

@@ -18,6 +18,20 @@ export function middleware(request) {
   const publicStaffGet =
     pathname === "/api/staff" && request.method === "GET";
 
+  // The supervisor's dashboard (/summary) is fed by this one endpoint, and the
+  // owner asked explicitly for Munish to see revenue, spend and attendance. It
+  // sits under /api/reports, which is otherwise owner-only, so it needs naming
+  // here or the page renders and then 403s every figure on it.
+  // It carries NO GST detail and no buyer GSTINs — those stay owner-only, on
+  // /api/reports/month and the gst-pack download.
+  // The attendance download on that same page is his too — he marks the team,
+  // so he may take the register away. Only that one type: the ops route also
+  // serves guests, leads, inventory and the accountant pack.
+  const staffReadableReport =
+    pathname === "/api/reports/period" ||
+    (pathname === "/api/reports/ops" &&
+      request.nextUrl.searchParams.get("type") === "attendance");
+
   if (
     pathname.startsWith("/login") ||
     pathname.startsWith("/api/login") ||
@@ -63,7 +77,10 @@ export function middleware(request) {
       // NOT /api/catalog (bills need menu rates) and NOT /api/inventory
       // (the Purchases page needs the area list for its dropdown).
     ];
-    if (ownerOnly.some((p) => pathname === p || pathname.startsWith(p + "/"))) {
+    if (
+      !staffReadableReport &&
+      ownerOnly.some((p) => pathname === p || pathname.startsWith(p + "/"))
+    ) {
       if (pathname.startsWith("/api/")) {
         return NextResponse.json(
           { error: "Owner access required" },

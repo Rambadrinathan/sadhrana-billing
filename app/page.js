@@ -222,9 +222,32 @@ export default function HomePage() {
             <Link href="/reports" className="btn btn-secondary" style={{ textAlign: "center" }}>
               Reports
             </Link>
+            <Link href="/summary" className="btn btn-secondary" style={{ textAlign: "center" }}>
+              How we are doing
+            </Link>
           </div>
         ) : (
           <>
+            <Link
+              href="/summary"
+              className="card"
+              style={{
+                display: "block",
+                marginBottom: 12,
+                background: "#F6F4EC",
+                border: "2px solid #B8892A",
+                textDecoration: "none",
+                color: "inherit",
+              }}
+            >
+              <div style={{ fontWeight: 800, fontSize: "1.1rem", color: "#8A6518" }}>
+                📊 HOW WE ARE DOING — this month
+              </div>
+              <p className="muted" style={{ margin: "6px 0 0", fontSize: "0.9rem" }}>
+                Money in · money out · who came how many days
+              </p>
+            </Link>
+
             <Link
               href="/expenses"
               className="card"

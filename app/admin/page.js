@@ -32,7 +32,11 @@ export default function AdminDashboard() {
   const [staffRoster, setStaffRoster] = useState([]);
   const [staffBusy, setStaffBusy] = useState(false);
   const [staffMsg, setStaffMsg] = useState("");
-  const [newStaff, setNewStaff] = useState({ name: "", phone: "" });
+  const [newStaff, setNewStaff] = useState({
+    name: "",
+    phone: "",
+    daily_rate_inr: "",
+  });
   const [editStaff, setEditStaff] = useState(null);
   const [newItem, setNewItem] = useState({
     name: "",
@@ -733,6 +737,21 @@ export default function AdminDashboard() {
                   inputMode="tel"
                 />
               </div>
+              <div className="field">
+                <label>Daily wage ₹ (optional)</label>
+                <input
+                  value={newStaff.daily_rate_inr}
+                  onChange={(e) =>
+                    setNewStaff({ ...newStaff, daily_rate_inr: e.target.value })
+                  }
+                  placeholder="e.g. 600"
+                  inputMode="decimal"
+                />
+                <span className="muted" style={{ fontSize: "0.78rem" }}>
+                  Wage for one full day. A half day pays half. Leave blank for
+                  monthly salary — the report then shows days only, no amount.
+                </span>
+              </div>
               <button
                 className="btn btn-primary"
                 type="button"
@@ -741,6 +760,7 @@ export default function AdminDashboard() {
                   saveStaff({
                     name: newStaff.name.trim(),
                     phone: newStaff.phone.trim() || null,
+                    daily_rate_inr: newStaff.daily_rate_inr,
                     sort_order: (staffRoster.length + 1) * 10,
                     active: true,
                   })
@@ -782,6 +802,20 @@ export default function AdminDashboard() {
                           }
                         />
                       </div>
+                      <div className="field">
+                        <label>Daily wage ₹</label>
+                        <input
+                          value={editStaff.daily_rate_inr ?? ""}
+                          onChange={(e) =>
+                            setEditStaff({
+                              ...editStaff,
+                              daily_rate_inr: e.target.value,
+                            })
+                          }
+                          placeholder="Blank = monthly salary"
+                          inputMode="decimal"
+                        />
+                      </div>
                       <div className="row">
                         <button
                           className="btn btn-primary"
@@ -792,6 +826,7 @@ export default function AdminDashboard() {
                               id: editStaff.id,
                               name: editStaff.name,
                               phone: editStaff.phone,
+                              daily_rate_inr: editStaff.daily_rate_inr,
                               sort_order: editStaff.sort_order,
                               active: true,
                             })
@@ -824,6 +859,9 @@ export default function AdminDashboard() {
                         </div>
                         <div className="muted" style={{ fontSize: "0.85rem" }}>
                           {s.phone || "No phone"}
+                          {s.daily_rate_inr
+                            ? ` · ${formatInr(s.daily_rate_inr)}/day`
+                            : " · no daily rate"}
                         </div>
                       </div>
                       <div style={{ display: "flex", gap: 6 }}>

@@ -53,6 +53,7 @@ const NUMH = { ...TH, textAlign: "right" };
 export default function MonthPage() {
   const [month, setMonth] = useState(thisMonthIst());
   const [data, setData] = useState(null);
+  const [gst, setGst] = useState(null);
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(true);
 
@@ -64,6 +65,14 @@ export default function MonthPage() {
       const d = await res.json();
       if (!res.ok) throw new Error(d.error || "Could not load the month");
       setData(d);
+      // The accountant's view comes from the period report. Kept as a separate
+      // call so a change here can never disturb the figures above.
+      try {
+        const g = await fetch(`/api/reports/period?month=${m}`);
+        setGst(g.ok ? (await g.json()).gst : null);
+      } catch {
+        setGst(null);
+      }
     } catch (e) {
       setErr(e.message);
       setData(null);
@@ -334,6 +343,87 @@ export default function MonthPage() {
                 </Scroll>
               )}
             </div>
+
+            {/* For the accountant: the return, and the questions asked of it */}
+            {gst ? (
+              <div className="card">
+                <div style={{ fontWeight: 800, marginBottom: 2 }}>
+                  For the accountant
+                </div>
+                <div
+                  className="muted"
+                  style={{ fontSize: "0.8rem", marginBottom: 10 }}
+                >
+                  Output tax is known in full. Input credit is only claimable
+                  against a purchase carrying a vendor GSTIN.
+                </div>
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <tbody>
+                    <tr style={{ borderTop: "1px solid #E6E9E3" }}>
+                      <td style={TD}>GST bills</td>
+                      <td style={NUM}>
+                        <strong>{gst.gstBills}</strong>
+                      </td>
+                    </tr>
+                    <tr style={{ borderTop: "1px solid #E6E9E3" }}>
+                      <td style={TD}>Non-GST bills</td>
+                      <td style={NUM}>
+                        <strong>{gst.nonGstBills}</strong>
+                      </td>
+                    </tr>
+                    <tr style={{ borderTop: "1px solid #E6E9E3" }}>
+                      <td style={TD}>B2B (buyer has a GSTIN)</td>
+                      <td style={NUM}>
+                        {gst.b2b.reduce((a, x) => a + x.count, 0)}
+                      </td>
+                    </tr>
+                    <tr style={{ borderTop: "1px solid #E6E9E3" }}>
+                      <td style={TD}>B2C</td>
+                      <td style={NUM}>{gst.b2c.count}</td>
+                    </tr>
+                    <tr style={{ borderTop: "1px solid #E6E9E3" }}>
+                      <td style={TD}>Output GST on sales</td>
+                      <td style={NUM}>{formatInr(gst.outputTotal)}</td>
+                    </tr>
+                    <tr style={{ borderTop: "1px solid #E6E9E3" }}>
+                      <td style={TD}>Less input GST claimable</td>
+                      <td style={NUM}>{formatInr(gst.inputClaimable)}</td>
+                    </tr>
+                    <tr style={{ borderTop: "2px solid #1F4B43" }}>
+                      <td style={TD}>
+                        <strong>Net GST payable</strong>
+                      </td>
+                      <td style={NUM}>
+                        <strong>{formatInr(gst.netPayable)}</strong>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+                {gst.purchasesWithoutGstin > 0 ? (
+                  <div
+                    style={{
+                      marginTop: 10,
+                      fontSize: "0.8rem",
+                      color: "#C2562A",
+                      fontWeight: 600,
+                    }}
+                  >
+                    ⚠️ {gst.purchasesWithoutGstin} purchase(s) carrying{" "}
+                    {formatInr(gst.inputUnclaimable)} of GST have no vendor
+                    GSTIN, so that credit cannot be claimed.
+                  </div>
+                ) : null}
+                <div style={{ marginTop: 12 }}>
+                  <a
+                    className="btn btn-primary"
+                    href={`/api/reports/ops?type=gst-pack&format=xlsx&from=${data.start}&to=${data.end}`}
+                    style={{ minHeight: 38 }}
+                  >
+                    Download accountant pack (Excel)
+                  </a>
+                </div>
+              </div>
+            ) : null}
 
             {/* Downloads */}
             <div className="card">

@@ -2,11 +2,12 @@
   "name": "sadhrana-billing",
   "version": "1.0.0",
   "private": true,
-  "description": "Phone-first checkout billing for Sadhrana Bagh villas — extras (F&B, massage, bonfire)",
+  "description": "Phone-first checkout billing for Sadhrana Bagh villas \u2014 extras (F&B, massage, bonfire)",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "test": "node --import ./tests/register-alias.mjs --test tests/*.test.mjs"
   },
   "dependencies": {
     "@sparticuz/chromium": "^149.0.0",
