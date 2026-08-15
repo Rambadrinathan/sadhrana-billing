@@ -41,3 +41,16 @@ comment on column staff_payments.amount_inr is
   'Always positive. A correction is an edit or a soft-delete of the original row, never a negative payment.';
 comment on column staff_payments.deleted_at is
   'Soft delete — a wrongly entered payment leaves the working view but stays auditable.';
+
+-- RLS stays ON with NO policy, deliberately.
+--
+-- The rest of this app reaches Supabase with the ANON key and every older table
+-- carries `for all using (true)`. That key ships inside the browser bundle, so
+-- those tables are effectively public to anyone who opens devtools. Wage data
+-- does not join that pile: with RLS on and no policy, the anon key cannot touch
+-- this table at all, and every read and write goes through the server-side
+-- service role in lib/staff-payments.js.
+--
+-- If a future change makes this table 404 or "violate row-level security", the
+-- fix is to use getSupabaseAdmin(), NOT to add a permissive policy.
+alter table staff_payments enable row level security;
