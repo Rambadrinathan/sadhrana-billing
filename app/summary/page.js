@@ -538,7 +538,9 @@ It stops counting against what he is owed.`
                       </div>
                     ) : (
                       <div className="muted" style={{ fontSize: "0.82rem", marginTop: 3 }}>
-                        No daily wage set — days only. Set it under Admin → Staff.
+                        {r.monthly
+                          ? "On a monthly salary — attendance recorded, nothing due by the day."
+                          : "No daily wage set — days only. Set it under Admin → Staff."}
                       </div>
                     )}
 
@@ -643,7 +645,7 @@ It stops counting against what he is owed.`
 
                     {/* Record a payment. Only offered where there is a rate —
                         without one there is no "earned" for it to net against. */}
-                    {r.dailyRate != null ? (
+                    {!r.monthly && r.dailyRate != null ? (
                       payFor?.name === r.name ? (
                         <div
                           className="card"

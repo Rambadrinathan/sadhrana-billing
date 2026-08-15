@@ -36,6 +36,7 @@ export default function AdminDashboard() {
     name: "",
     phone: "",
     daily_rate_inr: "",
+    pay_type: "daily",
   });
   const [editStaff, setEditStaff] = useState(null);
   const [newItem, setNewItem] = useState({
@@ -738,7 +739,20 @@ export default function AdminDashboard() {
                 />
               </div>
               <div className="field">
-                <label>Daily wage ₹ (optional)</label>
+                <label>How they are paid</label>
+                <select
+                  value={newStaff.pay_type}
+                  onChange={(e) =>
+                    setNewStaff({ ...newStaff, pay_type: e.target.value })
+                  }
+                >
+                  <option value="daily">Daily wage</option>
+                  <option value="monthly">Monthly salary</option>
+                </select>
+              </div>
+              {newStaff.pay_type === "daily" ? (
+              <div className="field">
+                <label>Daily wage ₹</label>
                 <input
                   value={newStaff.daily_rate_inr}
                   onChange={(e) =>
@@ -748,10 +762,10 @@ export default function AdminDashboard() {
                   inputMode="decimal"
                 />
                 <span className="muted" style={{ fontSize: "0.78rem" }}>
-                  Wage for one full day. A half day pays half. Leave blank for
-                  monthly salary — the report then shows days only, no amount.
+                  Wage for one full day. A half day pays half.
                 </span>
               </div>
+              ) : null}
               <button
                 className="btn btn-primary"
                 type="button"
@@ -761,6 +775,7 @@ export default function AdminDashboard() {
                     name: newStaff.name.trim(),
                     phone: newStaff.phone.trim() || null,
                     daily_rate_inr: newStaff.daily_rate_inr,
+                    pay_type: newStaff.pay_type,
                     sort_order: (staffRoster.length + 1) * 10,
                     active: true,
                   })
@@ -803,8 +818,21 @@ export default function AdminDashboard() {
                         />
                       </div>
                       <div className="field">
+                        <label>How they are paid</label>
+                        <select
+                          value={editStaff.pay_type || "daily"}
+                          onChange={(e) =>
+                            setEditStaff({ ...editStaff, pay_type: e.target.value })
+                          }
+                        >
+                          <option value="daily">Daily wage</option>
+                          <option value="monthly">Monthly salary</option>
+                        </select>
+                      </div>
+                      <div className="field">
                         <label>Daily wage ₹</label>
                         <input
+                          disabled={editStaff.pay_type === "monthly"}
                           value={editStaff.daily_rate_inr ?? ""}
                           onChange={(e) =>
                             setEditStaff({
@@ -827,6 +855,7 @@ export default function AdminDashboard() {
                               name: editStaff.name,
                               phone: editStaff.phone,
                               daily_rate_inr: editStaff.daily_rate_inr,
+                              pay_type: editStaff.pay_type,
                               sort_order: editStaff.sort_order,
                               active: true,
                             })
@@ -859,9 +888,11 @@ export default function AdminDashboard() {
                         </div>
                         <div className="muted" style={{ fontSize: "0.85rem" }}>
                           {s.phone || "No phone"}
-                          {s.daily_rate_inr
-                            ? ` · ${formatInr(s.daily_rate_inr)}/day`
-                            : " · no daily rate"}
+                          {s.pay_type === "monthly"
+                            ? " · monthly salary"
+                            : s.daily_rate_inr
+                              ? ` · ${formatInr(s.daily_rate_inr)}/day`
+                              : " · daily, no rate set"}
                         </div>
                       </div>
                       <div style={{ display: "flex", gap: 6 }}>

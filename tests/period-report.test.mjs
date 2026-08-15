@@ -232,6 +232,43 @@ test("somebody with no rate has no still-due figure to be wrong about", () => {
   assert.equal(out.rows[0].paid, 900, "the payment is still recorded and shown");
 });
 
+test("a salaried person owes nothing by the day, and is not nagged for a rate", () => {
+  const mixed = [
+    { name: "Binod", active: true, daily_rate_inr: 450, pay_type: "daily" },
+    { name: "Madan", active: true, daily_rate_inr: null, pay_type: "monthly" },
+  ];
+  const att = [
+    { staff_name: "Binod", date_ist: "2026-08-01", status: "present" },
+    { staff_name: "Madan", date_ist: "2026-08-01", status: "present" },
+  ];
+  const out = buildPeople(att, mixed, range, "2026-08-01", true, [], true);
+  const madan = out.rows.find((r) => r.name === "Madan");
+  assert.equal(madan.monthly, true);
+  assert.equal(madan.daysWorked, 1, "attendance is still recorded for them");
+  assert.equal(madan.payable, null, "no daily amount is due");
+  assert.equal(
+    out.ratesMissing,
+    0,
+    "a warning that can never be cleared is a warning that gets ignored"
+  );
+  assert.equal(out.monthlyCount, 1);
+  assert.equal(out.totalPayable, 450, "only the daily-wage person counts");
+});
+
+test("before the pay_type migration everyone stays daily, as before", () => {
+  const out = buildPeople(
+    [{ staff_name: "Madan", date_ist: "2026-08-01", status: "present" }],
+    [{ name: "Madan", active: true, pay_type: "monthly" }],
+    range,
+    "2026-08-01",
+    true,
+    [],
+    false // column not there yet
+  );
+  assert.equal(out.rows[0].monthly, false, "old behaviour, not a silent change");
+  assert.equal(out.payTypeKnown, false);
+});
+
 test("wage total sums only the people who have a rate", () => {
   const attendance = [
     { staff_name: "Madan", date_ist: "2026-08-01", status: "present" },
