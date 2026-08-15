@@ -354,85 +354,156 @@ export default function SummaryPage() {
             </div>
 
             {/* ------------------------------------------------- people --- */}
+            <h2 style={{ fontSize: "1rem", margin: "0 0 8px" }}>The team</h2>
+            {ppl.wagesAvailable && ppl.totalPayable > 0 ? (
+              <Grid>
+                <Answer
+                  question={`Wages due as of ${prettyDate(data.countedThrough)}`}
+                  value={formatInr(ppl.totalPayable)}
+                  hint={`${ppl.totalDaysWorked} days worked by the team`}
+                  tone="bad"
+                />
+              </Grid>
+            ) : null}
+
             <div className="card">
-              <div style={{ fontWeight: 800, marginBottom: 2 }}>The team</div>
-              <div className="muted" style={{ fontSize: "0.8rem", marginBottom: 10 }}>
+              <div className="muted" style={{ fontSize: "0.8rem", marginBottom: 12 }}>
                 Counted over {ppl.daysExpected} day
-                {ppl.daysExpected === 1 ? "" : "s"} up to {prettyDate(data.countedThrough)}.
-                A half day counts as ½. Days nobody marked show as absent.
+                {ppl.daysExpected === 1 ? "" : "s"}, {prettyDate(data.start)} to{" "}
+                {prettyDate(data.countedThrough)}. A half day counts as ½ and pays
+                half. Days nobody marked count as absent.
               </div>
+
               {ppl.rows.length === 0 ? (
                 <div className="muted">Nobody marked in these dates.</div>
               ) : (
-                <div style={{ overflowX: "auto" }}>
-                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                    <thead>
-                      <tr>
-                        <th style={TH}>Person</th>
-                        <th style={NUMH}>Came</th>
-                        <th style={NUMH}>Half</th>
-                        <th style={NUMH}>Leave</th>
-                        <th style={NUMH}>Absent</th>
-                        <th style={NUMH}>Days</th>
-                        {ppl.wagesAvailable ? <th style={NUMH}>To pay</th> : null}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {ppl.rows.map((r) => (
-                        <tr key={r.name} style={{ borderTop: "1px solid #E6E9E3" }}>
-                          <td style={TD}>
-                            <strong>{r.name}</strong>
-                            {!r.onRoster ? (
-                              <span className="muted" style={{ fontSize: "0.75rem" }}>
-                                {" "}
-                                (off roster)
-                              </span>
-                            ) : null}
-                          </td>
-                          <td style={NUM}>{r.present}</td>
-                          <td style={NUM}>{r.half || "—"}</td>
-                          <td style={NUM}>{r.leave || "—"}</td>
-                          <td style={{ ...NUM, color: r.absent ? "#C2562A" : "inherit" }}>
-                            {r.absent}
-                          </td>
-                          <td style={NUM}>
-                            <strong>{r.daysWorked}</strong>
-                          </td>
-                          {ppl.wagesAvailable ? (
-                            <td style={NUM}>
-                              {r.payable != null ? (
-                                <strong>{formatInr(r.payable)}</strong>
-                              ) : (
-                                <span className="muted">no rate</span>
-                              )}
-                            </td>
-                          ) : null}
-                        </tr>
-                      ))}
-                      {ppl.wagesAvailable && ppl.totalPayable > 0 ? (
-                        <tr style={{ borderTop: "2px solid #1F4B43" }}>
-                          <td style={TD} colSpan={5}>
-                            <strong>Total wages</strong>
-                          </td>
-                          <td style={NUM}>
-                            <strong>{ppl.totalDaysWorked}</strong>
-                          </td>
-                          <td style={NUM}>
-                            <strong>{formatInr(ppl.totalPayable)}</strong>
-                          </td>
-                        </tr>
+                ppl.rows.map((r) => (
+                  <div
+                    key={r.name}
+                    style={{
+                      borderTop: "1px solid #E6E9E3",
+                      padding: "12px 0",
+                    }}
+                  >
+                    {/* The answer first: who, and how much they are owed. */}
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "baseline",
+                        gap: 10,
+                      }}
+                    >
+                      <div style={{ fontWeight: 800, fontSize: "1.02rem" }}>
+                        {r.name}
+                        {!r.onRoster ? (
+                          <span className="muted" style={{ fontSize: "0.74rem", fontWeight: 500 }}>
+                            {" "}
+                            (off roster)
+                          </span>
+                        ) : null}
+                      </div>
+                      {r.payable != null ? (
+                        <div style={{ fontWeight: 800, fontSize: "1.15rem" }}>
+                          {formatInr(r.payable)}
+                        </div>
+                      ) : (
+                        <div className="muted" style={{ fontSize: "0.82rem" }}>
+                          {r.daysWorked} day{r.daysWorked === 1 ? "" : "s"}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Then the working — the answer to "why that much?", in the
+                        words he would say out loud to the person being paid. */}
+                    {r.workingOut ? (
+                      <div style={{ fontSize: "0.88rem", marginTop: 3 }}>
+                        Came {r.workingOut}
+                      </div>
+                    ) : (
+                      <div className="muted" style={{ fontSize: "0.82rem", marginTop: 3 }}>
+                        No daily wage set — days only. Set it under Admin → Staff.
+                      </div>
+                    )}
+
+                    {/* Then the evidence: one dot per day, countable by eye. */}
+                    {r.marks?.length ? (
+                      <div
+                        style={{
+                          display: "flex",
+                          flexWrap: "wrap",
+                          gap: 3,
+                          marginTop: 7,
+                        }}
+                        aria-label={`${r.present} of ${r.daysExpected} days present`}
+                      >
+                        {r.marks.map((m, i) => (
+                          <span
+                            key={i}
+                            title={`Day ${i + 1}: ${
+                              m === "P" ? "came" : m === "H" ? "half day" : m === "L" ? "leave" : "not marked"
+                            }`}
+                            style={{
+                              width: 13,
+                              height: 13,
+                              borderRadius: 3,
+                              background:
+                                m === "P"
+                                  ? "#2F6E60"
+                                  : m === "H"
+                                    ? "#8FBFB2"
+                                    : m === "L"
+                                      ? "#D8D2C2"
+                                      : "#F0DCD3",
+                              border: m ? "none" : "1px solid #E3C7BA",
+                            }}
+                          />
+                        ))}
+                      </div>
+                    ) : null}
+
+                    <div
+                      className="muted"
+                      style={{ fontSize: "0.78rem", marginTop: 6 }}
+                    >
+                      {r.present} came
+                      {r.half ? ` · ${r.half} half` : ""}
+                      {r.leave ? ` · ${r.leave} leave` : ""}
+                      {r.absent ? (
+                        <span style={{ color: "#C2562A", fontWeight: 600 }}>
+                          {" "}
+                          · {r.absent} not marked
+                        </span>
                       ) : null}
-                    </tbody>
-                  </table>
-                </div>
+                    </div>
+                  </div>
+                ))
               )}
+
+              {ppl.wagesAvailable && ppl.totalPayable > 0 ? (
+                <div
+                  style={{
+                    borderTop: "2px solid #1F4B43",
+                    marginTop: 8,
+                    paddingTop: 10,
+                    display: "flex",
+                    justifyContent: "space-between",
+                    fontWeight: 800,
+                  }}
+                >
+                  <span>Total due as of {prettyDate(data.countedThrough)}</span>
+                  <span>{formatInr(ppl.totalPayable)}</span>
+                </div>
+              ) : null}
+
               {ppl.wagesAvailable && ppl.ratesMissing > 0 ? (
                 <div className="muted" style={{ fontSize: "0.8rem", marginTop: 8 }}>
                   {ppl.ratesMissing} person(s) have no daily wage set, so no amount
                   is shown for them. Set it under Admin → Staff.
                 </div>
               ) : null}
-              <div style={{ marginTop: 10 }}>
+
+              <div style={{ marginTop: 12 }}>
                 <a
                   className="btn btn-ghost"
                   style={{ minHeight: 38 }}

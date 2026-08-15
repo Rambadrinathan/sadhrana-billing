@@ -113,6 +113,52 @@ test("an explicit absent row does not double-count against the derivation", () =
   assert.equal(madan.absent, 1, "2 elapsed less 1 present — counted once");
 });
 
+test("the working-out explains the amount in the words he would say", () => {
+  // Binod, gardener, 450/day — the real rate.
+  const roster450 = [{ name: "Binod", active: true, daily_rate_inr: 450 }];
+  const attendance = Array.from({ length: 10 }, (_, i) => ({
+    staff_name: "Binod",
+    date_ist: `2026-08-${String(i + 1).padStart(2, "0")}`,
+    status: "present",
+  }));
+  const out = buildPeople(attendance, roster450, range, "2026-08-14", true);
+  const b = out.rows[0];
+  assert.equal(b.payable, 4500, "10 x 450");
+  assert.equal(b.workingOut, "10 days × ₹450 = ₹4500");
+  assert.equal(b.absent, 4, "14 elapsed less 10 came");
+});
+
+test("a half day appears in the working-out, not just the total", () => {
+  const roster500 = [{ name: "Renu", active: true, daily_rate_inr: 500 }];
+  const attendance = [
+    { staff_name: "Renu", date_ist: "2026-08-01", status: "present" },
+    { staff_name: "Renu", date_ist: "2026-08-02", status: "present" },
+    { staff_name: "Renu", date_ist: "2026-08-03", status: "half" },
+  ];
+  const out = buildPeople(attendance, roster500, range, "2026-08-03", true);
+  assert.equal(out.rows[0].workingOut, "2 days + 1 half day × ₹500 = ₹1250");
+  assert.equal(out.rows[0].payable, 1250);
+});
+
+test("no rate means no working-out to show, rather than a wrong one", () => {
+  const out = buildPeople([], [{ name: "X", active: true }], range, "2026-08-02", true);
+  assert.equal(out.rows[0].workingOut, null);
+});
+
+test("the day strip has one mark per elapsed day, in order", () => {
+  const roster1 = [{ name: "Manisha", active: true, daily_rate_inr: 500 }];
+  const attendance = [
+    { staff_name: "Manisha", date_ist: "2026-08-01", status: "present" },
+    { staff_name: "Manisha", date_ist: "2026-08-03", status: "half" },
+    { staff_name: "Manisha", date_ist: "2026-08-04", status: "leave" },
+  ];
+  const out = buildPeople(attendance, roster1, range, "2026-08-05", true);
+  // Day 2 was never marked and day 5 has not been marked yet — both blank,
+  // which is what the supervisor is scanning the strip for.
+  assert.deepEqual(out.rows[0].marks, ["P", "", "H", "L", ""]);
+  assert.equal(out.rows[0].marks.length, out.rows[0].daysExpected);
+});
+
 test("wage total sums only the people who have a rate", () => {
   const attendance = [
     { staff_name: "Madan", date_ist: "2026-08-01", status: "present" },
