@@ -728,6 +728,67 @@ export default function BillDetailPage() {
           </div>
         </div>
 
+        {/* The paper this invoice was read from.
+            Law 1: the photograph IS the source of truth and the invoice above
+            is a transcription of it, so it belongs next to the numbers where
+            it can be checked at a glance — not behind a link, and not only in
+            the database. It was being captured and stored all along and simply
+            never rendered here, which looks identical to not having it.
+            no-print: it is evidence for the property, not part of the tax
+            invoice the guest receives. */}
+        <div className="no-print" style={{ marginTop: 16 }}>
+          {bill.source_photo_url ? (
+            <div className="card">
+              <div style={{ fontWeight: 800, marginBottom: 2 }}>
+                The paper this came from
+              </div>
+              <div className="muted" style={{ fontSize: "0.8rem", marginBottom: 10 }}>
+                Photographed on {bill.source === "telegram" ? "Telegram" : "the web"}.
+                Tap to open it full size.
+              </div>
+              <a
+                href={bill.source_photo_url}
+                target="_blank"
+                rel="noreferrer"
+                title="Open the full photo"
+                style={{ display: "block", textDecoration: "none" }}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={bill.source_photo_url}
+                  alt="Photo of the slip this invoice was read from"
+                  style={{
+                    width: "100%",
+                    maxWidth: 420,
+                    maxHeight: 320,
+                    objectFit: "cover",
+                    objectPosition: "top",
+                    borderRadius: 8,
+                    border: "1.5px solid #D8DCD5",
+                    display: "block",
+                  }}
+                />
+              </a>
+            </div>
+          ) : bill.source === "telegram" ? (
+            // Only a gap worth flagging when the entry CAME from a photo. A
+            // stay invoice typed on the web has no paper behind it by design,
+            // and shouting about that would train the reader to ignore this.
+            <div
+              className="card"
+              style={{ borderColor: "#C2562A", borderStyle: "dashed" }}
+            >
+              <div style={{ color: "#C2562A", fontWeight: 700 }}>
+                No photo of the paper on file
+              </div>
+              <div className="muted" style={{ fontSize: "0.82rem", marginTop: 4 }}>
+                This was raised from a photo but the image was not stored, so
+                the figures above cannot be checked against the slip.
+              </div>
+            </div>
+          ) : null}
+        </div>
+
         <div className="no-print" style={{ marginTop: 16, display: "grid", gap: 10 }}>
           {justCreated ? (
             <div
