@@ -48,6 +48,20 @@ in `buildPeople` and nowhere else.
 and a blank, never `₹0`. A confident zero in a payroll column is worse than a
 gap.
 
+**Earned is not owed.** Daily-wage staff are paid in instalments — an advance
+mid-month, the balance later — so the card shows
+`earned (days × rate) − paid = still due`, and **still due** is the figure in
+large type, because that is the one he acts on. Overpayment shows as a negative
+"over-paid" rather than being clamped to zero; it is a real advance against next
+month and hiding it would lose it.
+
+**Every wage figure is editable from the phone.** Rates under Admin → Staff,
+payments inline on the card — each one has *Change* and *Remove*. The entry is
+made one-handed standing in a garden and will sometimes be the wrong amount or
+the wrong person; a correction that needs a laptop is a correction that never
+happens, and the ledger rots quietly. Deletes are soft, so a removed payment is
+still auditable.
+
 **Rooms and F&B are never summed.** SAC 997212 @ 18% and SAC 996331 @ 5% are two
 businesses at two rates (Law 2). Side by side everywhere; the split *is* the
 return.

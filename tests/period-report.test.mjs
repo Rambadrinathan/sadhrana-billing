@@ -159,6 +159,79 @@ test("the day strip has one mark per elapsed day, in order", () => {
   assert.equal(out.rows[0].marks.length, out.rows[0].daysExpected);
 });
 
+const binod = [{ name: "Binod", active: true, daily_rate_inr: 450 }];
+const tenDays = Array.from({ length: 10 }, (_, i) => ({
+  staff_name: "Binod",
+  date_ist: `2026-08-${String(i + 1).padStart(2, "0")}`,
+  status: "present",
+}));
+
+test("a payment nets off what is still due", () => {
+  const out = buildPeople(tenDays, binod, range, "2026-08-14", true, [
+    { id: "p1", staff_name: "Binod", amount_inr: 2000, paid_on: "2026-08-08" },
+  ]);
+  const b = out.rows[0];
+  assert.equal(b.earned, 4500);
+  assert.equal(b.paid, 2000);
+  assert.equal(b.stillDue, 2500, "earned less paid is what he actually owes");
+  assert.equal(out.totalStillDue, 2500);
+});
+
+test("several part payments add up and stay listed oldest first", () => {
+  const out = buildPeople(tenDays, binod, range, "2026-08-14", true, [
+    { id: "p2", staff_name: "Binod", amount_inr: 1000, paid_on: "2026-08-11" },
+    { id: "p1", staff_name: "Binod", amount_inr: 1500, paid_on: "2026-08-04" },
+  ]);
+  const b = out.rows[0];
+  assert.equal(b.paid, 2500);
+  assert.equal(b.stillDue, 2000);
+  assert.deepEqual(
+    b.paidList.map((x) => x.id),
+    ["p1", "p2"],
+    "shown in the order the money went out"
+  );
+});
+
+test("overpayment shows as negative rather than being hidden at zero", () => {
+  const out = buildPeople(tenDays, binod, range, "2026-08-14", true, [
+    { id: "p1", staff_name: "Binod", amount_inr: 5000, paid_on: "2026-08-08" },
+  ]);
+  assert.equal(out.rows[0].stillDue, -500, "an advance against next month");
+});
+
+test("a payment matches by name even when the person left the roster", () => {
+  const out = buildPeople(
+    [{ staff_name: "Arup", date_ist: "2026-08-01", status: "present" }],
+    binod,
+    range,
+    "2026-08-01",
+    true,
+    [{ id: "p1", staff_name: "arup", amount_inr: 300, paid_on: "2026-08-01" }]
+  );
+  const arup = out.rows.find((r) => r.name === "Arup");
+  assert.equal(arup.paid, 300, "matched case-insensitively, like attendance");
+});
+
+test("no payments at all means still due equals earned", () => {
+  const out = buildPeople(tenDays, binod, range, "2026-08-14", true, []);
+  assert.equal(out.rows[0].paid, 0);
+  assert.equal(out.rows[0].stillDue, 4500);
+  assert.equal(out.paymentsRecorded, 0);
+});
+
+test("somebody with no rate has no still-due figure to be wrong about", () => {
+  const out = buildPeople(
+    [{ staff_name: "X", date_ist: "2026-08-01", status: "present" }],
+    [{ name: "X", active: true }],
+    range,
+    "2026-08-01",
+    true,
+    [{ id: "p1", staff_name: "X", amount_inr: 900, paid_on: "2026-08-01" }]
+  );
+  assert.equal(out.rows[0].stillDue, null);
+  assert.equal(out.rows[0].paid, 900, "the payment is still recorded and shown");
+});
+
 test("wage total sums only the people who have a rate", () => {
   const attendance = [
     { staff_name: "Madan", date_ist: "2026-08-01", status: "present" },

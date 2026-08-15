@@ -110,6 +110,13 @@ export default function SummaryPage() {
   const [data, setData] = useState(null);
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(true);
+  // Which person's payment form is open, and what is in it. One at a time:
+  // this is a phone, and two open forms is two chances to type into the wrong
+  // one. `editing` holds a payment id when correcting rather than adding.
+  const [payFor, setPayFor] = useState(null);
+  const [payForm, setPayForm] = useState({ amount: "", paid_on: "", note: "" });
+  const [payBusy, setPayBusy] = useState(false);
+  const [payMsg, setPayMsg] = useState("");
 
   const load = useCallback(async (f, t) => {
     setLoading(true);
@@ -130,6 +137,78 @@ export default function SummaryPage() {
   useEffect(() => {
     load(from, to);
   }, [from, to, load]);
+
+  function openPayment(person, existing = null) {
+    setPayMsg("");
+    setPayFor({ name: person.name, id: existing?.id || null });
+    setPayForm(
+      existing
+        ? { amount: String(existing.amount), paid_on: existing.paidOn, note: existing.note || "" }
+        : {
+            // Prefill with what is actually still owed — the overwhelmingly
+            // common payment. He can overwrite it for a part payment.
+            amount: person.stillDue > 0 ? String(person.stillDue) : "",
+            paid_on: todayIst(),
+            note: "",
+          }
+    );
+  }
+
+  async function savePayment() {
+    if (!payFor) return;
+    setPayBusy(true);
+    setPayMsg("");
+    try {
+      const body = {
+        id: payFor.id || undefined,
+        staff_name: payFor.name,
+        amount_inr: Number(payForm.amount),
+        paid_on: payForm.paid_on,
+        note: payForm.note,
+      };
+      const res = await fetch("/api/staff-payments", {
+        method: payFor.id ? "PATCH" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || "Could not save the payment");
+      setPayFor(null);
+      await load(from, to);
+    } catch (e) {
+      setPayMsg(e.message);
+    } finally {
+      setPayBusy(false);
+    }
+  }
+
+  async function removePayment(person, payment) {
+    if (
+      !window.confirm(
+        `Remove this payment?
+
+${person.name} · ${formatInr(payment.amount)} on ${payment.paidOn}
+
+It stops counting against what he is owed.`
+      )
+    ) {
+      return;
+    }
+    setPayBusy(true);
+    setPayMsg("");
+    try {
+      const res = await fetch(`/api/staff-payments?id=${payment.id}`, {
+        method: "DELETE",
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || "Could not remove it");
+      await load(from, to);
+    } catch (e) {
+      setPayMsg(e.message);
+    } finally {
+      setPayBusy(false);
+    }
+  }
 
   const presets = useMemo(
     () => [
@@ -355,13 +434,24 @@ export default function SummaryPage() {
 
             {/* ------------------------------------------------- people --- */}
             <h2 style={{ fontSize: "1rem", margin: "0 0 8px" }}>The team</h2>
-            {ppl.wagesAvailable && ppl.totalPayable > 0 ? (
+            {ppl.wagesAvailable && (ppl.totalPayable > 0 || ppl.totalPaid > 0) ? (
               <Grid>
                 <Answer
-                  question={`Wages due as of ${prettyDate(data.countedThrough)}`}
+                  question="Earned so far"
                   value={formatInr(ppl.totalPayable)}
-                  hint={`${ppl.totalDaysWorked} days worked by the team`}
-                  tone="bad"
+                  hint={`${ppl.totalDaysWorked} days worked`}
+                />
+                <Answer
+                  question="Already paid"
+                  value={formatInr(ppl.totalPaid)}
+                  hint={`${ppl.paymentsRecorded} payment(s) recorded`}
+                  tone="good"
+                />
+                <Answer
+                  question={`Still due as of ${prettyDate(data.countedThrough)}`}
+                  value={formatInr(ppl.totalStillDue)}
+                  hint="earned less paid"
+                  tone={ppl.totalStillDue > 0 ? "bad" : undefined}
                 />
               </Grid>
             ) : null}
@@ -373,6 +463,7 @@ export default function SummaryPage() {
                 {prettyDate(data.countedThrough)}. A half day counts as ½ and pays
                 half. Days nobody marked count as absent.
               </div>
+              {payMsg ? <div className="error">{payMsg}</div> : null}
 
               {ppl.rows.length === 0 ? (
                 <div className="muted">Nobody marked in these dates.</div>
@@ -380,12 +471,10 @@ export default function SummaryPage() {
                 ppl.rows.map((r) => (
                   <div
                     key={r.name}
-                    style={{
-                      borderTop: "1px solid #E6E9E3",
-                      padding: "12px 0",
-                    }}
+                    style={{ borderTop: "1px solid #E6E9E3", padding: "12px 0" }}
                   >
-                    {/* The answer first: who, and how much they are owed. */}
+                    {/* The answer first: who, and what is STILL owed — that is
+                        the number he acts on, not what they have earned. */}
                     <div
                       style={{
                         display: "flex",
@@ -403,9 +492,30 @@ export default function SummaryPage() {
                           </span>
                         ) : null}
                       </div>
-                      {r.payable != null ? (
-                        <div style={{ fontWeight: 800, fontSize: "1.15rem" }}>
-                          {formatInr(r.payable)}
+                      {r.stillDue != null ? (
+                        <div
+                          style={{
+                            fontWeight: 800,
+                            fontSize: "1.15rem",
+                            color:
+                              r.stillDue > 0
+                                ? "#C2562A"
+                                : r.stillDue < 0
+                                  ? "#8A6518"
+                                  : "#1F4B43",
+                          }}
+                        >
+                          {formatInr(r.stillDue)}
+                          <span
+                            className="muted"
+                            style={{ fontSize: "0.72rem", fontWeight: 600 }}
+                          >
+                            {r.stillDue > 0
+                              ? " due"
+                              : r.stillDue < 0
+                                ? " over-paid"
+                                : " settled"}
+                          </span>
                         </div>
                       ) : (
                         <div className="muted" style={{ fontSize: "0.82rem" }}>
@@ -414,11 +524,17 @@ export default function SummaryPage() {
                       )}
                     </div>
 
-                    {/* Then the working — the answer to "why that much?", in the
-                        words he would say out loud to the person being paid. */}
+                    {/* Then the working — the answer to "why that much?" */}
                     {r.workingOut ? (
                       <div style={{ fontSize: "0.88rem", marginTop: 3 }}>
-                        Came {r.workingOut}
+                        Came {r.workingOut} earned
+                        {r.paid > 0 ? (
+                          <>
+                            {" "}
+                            · paid {formatInr(r.paid)} ·{" "}
+                            <strong>still due {formatInr(r.stillDue)}</strong>
+                          </>
+                        ) : null}
                       </div>
                     ) : (
                       <div className="muted" style={{ fontSize: "0.82rem", marginTop: 3 }}>
@@ -426,22 +542,23 @@ export default function SummaryPage() {
                       </div>
                     )}
 
-                    {/* Then the evidence: one dot per day, countable by eye. */}
+                    {/* Then the evidence: one square per day, countable by eye. */}
                     {r.marks?.length ? (
                       <div
-                        style={{
-                          display: "flex",
-                          flexWrap: "wrap",
-                          gap: 3,
-                          marginTop: 7,
-                        }}
+                        style={{ display: "flex", flexWrap: "wrap", gap: 3, marginTop: 7 }}
                         aria-label={`${r.present} of ${r.daysExpected} days present`}
                       >
                         {r.marks.map((m, i) => (
                           <span
                             key={i}
                             title={`Day ${i + 1}: ${
-                              m === "P" ? "came" : m === "H" ? "half day" : m === "L" ? "leave" : "not marked"
+                              m === "P"
+                                ? "came"
+                                : m === "H"
+                                  ? "half day"
+                                  : m === "L"
+                                    ? "leave"
+                                    : "not marked"
                             }`}
                             style={{
                               width: 13,
@@ -462,10 +579,7 @@ export default function SummaryPage() {
                       </div>
                     ) : null}
 
-                    <div
-                      className="muted"
-                      style={{ fontSize: "0.78rem", marginTop: 6 }}
-                    >
+                    <div className="muted" style={{ fontSize: "0.78rem", marginTop: 6 }}>
                       {r.present} came
                       {r.half ? ` · ${r.half} half` : ""}
                       {r.leave ? ` · ${r.leave} leave` : ""}
@@ -476,11 +590,137 @@ export default function SummaryPage() {
                         </span>
                       ) : null}
                     </div>
+
+                    {/* Payments already made — every one correctable, because
+                        the entry was made one-handed and will sometimes be
+                        wrong, and a fix that needs a laptop never happens. */}
+                    {r.paidList?.length ? (
+                      <div style={{ marginTop: 8 }}>
+                        {r.paidList.map((pmt) => (
+                          <div
+                            key={pmt.id}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              flexWrap: "wrap",
+                              gap: 8,
+                              fontSize: "0.82rem",
+                              padding: "3px 0",
+                            }}
+                          >
+                            <span style={{ color: "#1F4B43", fontWeight: 700 }}>
+                              {formatInr(pmt.amount)}
+                            </span>
+                            <span className="muted">on {prettyDate(pmt.paidOn)}</span>
+                            {pmt.note ? <span className="muted">· {pmt.note}</span> : null}
+                            <button
+                              type="button"
+                              className="btn btn-ghost"
+                              style={{ minHeight: 28, padding: "2px 8px", fontSize: "0.76rem" }}
+                              onClick={() => openPayment(r, pmt)}
+                              disabled={payBusy}
+                            >
+                              Change
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btn-ghost"
+                              style={{
+                                minHeight: 28,
+                                padding: "2px 8px",
+                                fontSize: "0.76rem",
+                                color: "#C2562A",
+                              }}
+                              onClick={() => removePayment(r, pmt)}
+                              disabled={payBusy}
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
+
+                    {/* Record a payment. Only offered where there is a rate —
+                        without one there is no "earned" for it to net against. */}
+                    {r.dailyRate != null ? (
+                      payFor?.name === r.name ? (
+                        <div
+                          className="card"
+                          style={{ marginTop: 10, background: "var(--green-soft)" }}
+                        >
+                          <strong style={{ fontSize: "0.9rem" }}>
+                            {payFor.id ? "Change this payment" : `Pay ${r.name}`}
+                          </strong>
+                          <div className="row" style={{ marginTop: 8 }}>
+                            <div className="field">
+                              <label>Amount ₹</label>
+                              <input
+                                value={payForm.amount}
+                                onChange={(e) =>
+                                  setPayForm({ ...payForm, amount: e.target.value })
+                                }
+                                inputMode="decimal"
+                                autoFocus
+                              />
+                            </div>
+                            <div className="field">
+                              <label>Paid on</label>
+                              <input
+                                type="date"
+                                value={payForm.paid_on}
+                                onChange={(e) =>
+                                  setPayForm({ ...payForm, paid_on: e.target.value })
+                                }
+                              />
+                            </div>
+                          </div>
+                          <div className="field">
+                            <label>Note (optional)</label>
+                            <input
+                              value={payForm.note}
+                              onChange={(e) =>
+                                setPayForm({ ...payForm, note: e.target.value })
+                              }
+                              placeholder="advance, cash, UPI…"
+                            />
+                          </div>
+                          <div className="row" style={{ gap: 8 }}>
+                            <button
+                              type="button"
+                              className="btn btn-primary"
+                              onClick={savePayment}
+                              disabled={payBusy || !payForm.amount}
+                            >
+                              {payBusy ? "Saving…" : "Save"}
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btn-ghost"
+                              onClick={() => setPayFor(null)}
+                              disabled={payBusy}
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          className="btn btn-ghost"
+                          style={{ minHeight: 34, marginTop: 8, fontSize: "0.84rem" }}
+                          onClick={() => openPayment(r)}
+                          disabled={payBusy}
+                        >
+                          + Record a payment
+                        </button>
+                      )
+                    ) : null}
                   </div>
                 ))
               )}
 
-              {ppl.wagesAvailable && ppl.totalPayable > 0 ? (
+              {ppl.wagesAvailable && ppl.totalStillDue !== 0 ? (
                 <div
                   style={{
                     borderTop: "2px solid #1F4B43",
@@ -491,8 +731,8 @@ export default function SummaryPage() {
                     fontWeight: 800,
                   }}
                 >
-                  <span>Total due as of {prettyDate(data.countedThrough)}</span>
-                  <span>{formatInr(ppl.totalPayable)}</span>
+                  <span>Still due as of {prettyDate(data.countedThrough)}</span>
+                  <span>{formatInr(ppl.totalStillDue)}</span>
                 </div>
               ) : null}
 

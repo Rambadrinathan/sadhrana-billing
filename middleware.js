@@ -60,6 +60,9 @@ export function middleware(request) {
     const ownerOnly = [
       "/admin",
       "/reports",
+      // NOT /api/staff-payments — the supervisor physically hands the wages
+      // over, so if he cannot record it from his phone it gets recorded
+      // nowhere and the "still due" figure is a lie by the second week.
       // Month-end shows total revenue, GST and net — owner numbers. Its data API
       // lives under /api/reports and is already owner-only, so leaving the page
       // open to staff would render it and then 403 every figure on it.
