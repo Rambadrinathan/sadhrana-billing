@@ -139,8 +139,11 @@ export default function AttendancePage() {
         title="Attendance"
         subtitle="Mark the team for the day"
         right={
-          <Link href="/" className="btn btn-ghost">
-            Home
+          // Marking the day and asking "so what do I owe them" are the same
+          // errand ten seconds apart. Going home first to find it is a step
+          // that gets skipped.
+          <Link href="/summary" className="btn btn-ghost">
+            Days &amp; wages
           </Link>
         }
       />

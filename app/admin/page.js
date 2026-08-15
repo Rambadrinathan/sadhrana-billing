@@ -349,6 +349,11 @@ export default function AdminDashboard() {
             ["/leads", "Leads"],
             ["/guests", "Guests"],
             ["/attendance", "Attendance"],
+            // First in the reporting group on purpose: this is the one that
+            // answers "how are we doing" in a sentence, where Month end
+            // answers the accountant's questions. It was only linked from the
+            // home screen, so from this dashboard it was unreachable.
+            ["/summary", "📈 How we are doing"],
             ["/month", "📊 Month end"],
             ["/reports", "Reports PDF/Excel"],
           ].map(([href, label]) => (
