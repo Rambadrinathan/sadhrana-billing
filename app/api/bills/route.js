@@ -86,6 +86,7 @@ export async function POST(request) {
       lines,
       source: body.source || "web",
       gst_applied: body.gst_applied !== false,
+      gst_inclusive: body.gst_inclusive === true,
       created_by,
       amount_paid,
       // B2B. createBill validates the GSTIN (including its check digit) and
