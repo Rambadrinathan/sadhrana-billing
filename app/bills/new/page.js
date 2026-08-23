@@ -21,6 +21,8 @@ export default function NewBillPage() {
   const [buyerAddress, setBuyerAddress] = useState("");
   const [notes, setNotes] = useState("");
   const [advance, setAdvance] = useState("");
+  /** Guest settling on the card machine — recovers the bank's fee on top. */
+  const [cardFee, setCardFee] = useState(false);
   const [staffList, setStaffList] = useState([]);
   /** Roster name, or "__others__" for free-typed person */
   const [staffPick, setStaffPick] = useState("");
@@ -121,13 +123,22 @@ export default function NewBillPage() {
       subtotal += base;
       tax += (base * (l.gst_pct || 0)) / 100;
     }
+    const total = Math.round((subtotal + tax) * 100) / 100;
+    // 2.5% of the total AFTER tax, and not taxed itself — it recovers the
+    // bank's charge on the swipe rather than paying for a supply.
+    const fee = cardFee
+      ? Math.round(((total * PROPERTY.cardFeePct) / 100) * 100) / 100
+      : 0;
     return {
       subtotal,
       tax,
-      total: subtotal + tax,
+      total,
+      fee,
+      // What the guest is charged. `total` stays the invoice/revenue figure.
+      payable: Math.round((total + fee) * 100) / 100,
       count: selectedLines.length,
     };
-  }, [selectedLines]);
+  }, [selectedLines, cardFee]);
 
   /**
    * Check the GSTIN as it is typed, including the government check digit.
@@ -202,6 +213,7 @@ export default function NewBillPage() {
           lines: selectedLines,
           created_by: resolvedStaff,
           amount_paid: Number(advance) > 0 ? Number(advance) : 0,
+          card_fee: cardFee,
         }),
       });
       const data = await res.json();
@@ -387,6 +399,26 @@ export default function NewBillPage() {
             </>
           ) : null}
           <div className="field">
+            <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <input
+                type="checkbox"
+                checked={cardFee}
+                onChange={(e) => setCardFee(e.target.checked)}
+                style={{ width: 18, height: 18 }}
+              />
+              <span>
+                Paying by card — add {PROPERTY.cardFeePct}% card payment fee
+              </span>
+            </label>
+            {cardFee ? (
+              <p className="muted" style={{ fontSize: "0.8rem", margin: "4px 0 0" }}>
+                {formatInr(preview.fee)} on the post-GST total. Guest pays{" "}
+                {formatInr(preview.payable)}. The fee is a bank charge, not a
+                taxable supply — no GST is added to it.
+              </p>
+            ) : null}
+          </div>
+          <div className="field">
             <label>Advance / amount paid now (₹)</label>
             <input
               value={advance}
@@ -504,6 +536,18 @@ export default function NewBillPage() {
               <span>Total</span>
               <span>{formatInr(preview.total)}</span>
             </div>
+            {preview.fee > 0 ? (
+              <>
+                <div className="line">
+                  <span>Card fee ({PROPERTY.cardFeePct}%)</span>
+                  <span>{formatInr(preview.fee)}</span>
+                </div>
+                <div className="grand">
+                  <span>Guest pays</span>
+                  <span>{formatInr(preview.payable)}</span>
+                </div>
+              </>
+            ) : null}
           </div>
         </div>
       </main>
@@ -517,7 +561,7 @@ export default function NewBillPage() {
         >
           {saving
             ? "Creating invoice…"
-            : `Generate tax invoice · ${formatInr(preview.total)}`}
+            : `Generate tax invoice · ${formatInr(preview.payable)}`}
         </button>
       </div>
     </div>

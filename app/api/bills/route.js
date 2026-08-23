@@ -87,6 +87,8 @@ export async function POST(request) {
       source: body.source || "web",
       gst_applied: body.gst_applied !== false,
       gst_inclusive: body.gst_inclusive === true,
+      // Card settlement: 2.5% of the post-GST total, recovered from the guest.
+      card_fee: body.card_fee === true,
       created_by,
       amount_paid,
       // B2B. createBill validates the GSTIN (including its check digit) and

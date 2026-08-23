@@ -701,6 +701,25 @@ export default function BillDetailPage() {
               <span>Total</span>
               <span>{formatInrExact(bill.grand_total)}</span>
             </div>
+            {Number(bill.card_fee_inr) > 0 ? (
+              <>
+                <div className="line">
+                  <span>
+                    Card payment fee
+                    {Number(bill.card_fee_pct) ? ` (${Number(bill.card_fee_pct)}%)` : ""}
+                  </span>
+                  <span>{formatInrExact(bill.card_fee_inr)}</span>
+                </div>
+                <div className="grand">
+                  <span>Amount payable</span>
+                  <span>
+                    {formatInrExact(
+                      Number(bill.grand_total) + Number(bill.card_fee_inr)
+                    )}
+                  </span>
+                </div>
+              </>
+            ) : null}
             {Number(bill.amount_paid) > 0 ? (
               <>
                 <div className="line">

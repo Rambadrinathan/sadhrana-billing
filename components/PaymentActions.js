@@ -13,6 +13,10 @@ export default function PaymentActions({ bill, busy, onPaid }) {
   const [localBusy, setLocalBusy] = useState(false);
   const due = amountDue(bill);
   const paid = Number(bill.amount_paid || 0);
+  // What the guest owes in total, card fee included. `grand_total` remains the
+  // invoice/revenue figure and is not what gets collected on a card bill.
+  const cardFee = Number(bill.card_fee_inr || 0);
+  const payable = Math.round((Number(bill.grand_total || 0) + cardFee) * 100) / 100;
 
   const upiUri = useMemo(() => {
     if (bill.status === "paid" || due <= 0) return null;
@@ -50,11 +54,14 @@ export default function PaymentActions({ bill, busy, onPaid }) {
       <div className="card" style={{ background: "var(--green-soft)" }}>
         <strong>Fully paid</strong>
         <p className="muted" style={{ margin: "6px 0 0", fontSize: "0.9rem" }}>
-          {formatInrExact(bill.grand_total)}
+          {formatInrExact(payable)}
           {bill.payment_mode
             ? ` · ${String(bill.payment_mode).toUpperCase()}`
             : ""}
-          {paid > 0 && paid !== Number(bill.grand_total)
+          {cardFee > 0
+            ? ` · incl. ${formatInrExact(cardFee)} card fee`
+            : ""}
+          {paid > 0 && paid !== payable
             ? ` · recorded ${formatInrExact(paid)}`
             : ""}
         </p>
@@ -67,6 +74,9 @@ export default function PaymentActions({ bill, busy, onPaid }) {
       <strong>Collect payment</strong>
       <p className="muted" style={{ fontSize: "0.88rem", margin: "6px 0 12px" }}>
         Billed {formatInrExact(bill.grand_total)}
+        {cardFee > 0
+          ? ` · Card fee ${formatInrExact(cardFee)} · Payable ${formatInrExact(payable)}`
+          : ""}
         {paid > 0 ? ` · Already paid ${formatInrExact(paid)}` : ""}
         {" · "}
         <strong>Due {formatInrExact(due)}</strong>

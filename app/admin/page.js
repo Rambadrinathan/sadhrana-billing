@@ -167,15 +167,22 @@ export default function AdminDashboard() {
     let pending = 0;
     let gst = 0;
     let billed = 0;
+    // Bank charges recovered today. Reported separately so it is visible that
+    // collected exceeds billed by exactly this, and not by a billing error.
+    let cardFees = 0;
     for (const b of day) {
+      // Billed is revenue and stays the invoice total. Collected/pending are
+      // money movements, so they use the payable figure — a card bill takes
+      // grand total + fee off the machine, and the till must match the machine.
+      const payable =
+        Number(b.grand_total || 0) + Number(b.card_fee_inr || 0);
       billed += Number(b.grand_total || 0);
+      cardFees += Number(b.card_fee_inr || 0);
       gst += Number(b.tax_total || 0);
       const paidAmt =
-        b.status === "paid"
-          ? Number(b.grand_total || 0)
-          : Number(b.amount_paid || 0);
+        b.status === "paid" ? payable : Number(b.amount_paid || 0);
       collected += paidAmt;
-      pending += Math.max(0, Number(b.grand_total || 0) - paidAmt);
+      pending += Math.max(0, payable - paidAmt);
       const mode = String(b.payment_mode || "other").toLowerCase();
       if (paidAmt > 0) {
         if (byMode[mode] != null) byMode[mode] += paidAmt;
@@ -189,6 +196,7 @@ export default function AdminDashboard() {
       collected,
       pending,
       gst,
+      cardFees,
       byMode,
       bills: day,
     };
@@ -462,6 +470,14 @@ export default function AdminDashboard() {
               <div>
                 GST component: <strong>{formatInr(dayEnd.gst)}</strong>
               </div>
+              {dayEnd.cardFees > 0 ? (
+                <div>
+                  Card fees recovered: <strong>{formatInr(dayEnd.cardFees)}</strong>{" "}
+                  <span className="muted" style={{ fontSize: "0.82rem" }}>
+                    (bank charge, not revenue — collected exceeds billed by this)
+                  </span>
+                </div>
+              ) : null}
               <div>
                 Collected: <strong>{formatInr(dayEnd.collected)}</strong>
               </div>
