@@ -442,9 +442,24 @@ export default function BillDetailPage() {
                 className="muted"
                 style={{ fontSize: "0.75rem", textTransform: "uppercase" }}
               >
-                Guest
+                {bill.buyer_company ? "Buyer (Bill to)" : "Guest"}
               </div>
-              <strong>{bill.guest_name}</strong>
+              <strong>{bill.buyer_company || bill.guest_name}</strong>
+              {bill.buyer_gstin ? (
+                <div style={{ fontWeight: 700, marginTop: 2 }}>
+                  GSTIN/UIN: {bill.buyer_gstin}
+                </div>
+              ) : null}
+              {bill.buyer_address ? (
+                <div className="muted" style={{ fontSize: "0.85rem" }}>
+                  {bill.buyer_address}
+                </div>
+              ) : null}
+              {bill.buyer_company && bill.guest_name ? (
+                <div className="muted" style={{ fontSize: "0.85rem" }}>
+                  Guest: {bill.guest_name}
+                </div>
+              ) : null}
               {bill.guest_phone ? <div>{bill.guest_phone}</div> : null}
               {bill.guest_email ? <div>{bill.guest_email}</div> : null}
             </div>

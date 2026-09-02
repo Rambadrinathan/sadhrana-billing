@@ -330,11 +330,19 @@ export default function NewBillPage() {
               type="email"
             />
           </div>
-          {/* Corporate booking. Off by default — most guests pay personally and
-              a B2C invoice needs none of this. When on, the company becomes
-              "Buyer (Bill to)" and its GSTIN is printed on the invoice so the
-              customer can claim input credit. */}
-          <div className="field" style={{ gridColumn: "1 / -1" }}>
+          {/* Corporate booking — same control as the room invoice. Off by
+              default (most guests are individuals). When on, company + GSTIN
+              print on the F&B tax invoice so the customer can claim ITC. */}
+          <div
+            className="field"
+            style={{
+              gridColumn: "1 / -1",
+              padding: "10px 12px",
+              borderRadius: 8,
+              background: isB2b ? "#FDF3EC" : "#F5F7F4",
+              border: `1px solid ${isB2b ? "#E8C4A8" : "#E6E9E3"}`,
+            }}
+          >
             <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <input
                 type="checkbox"
@@ -349,7 +357,12 @@ export default function NewBillPage() {
                 }}
                 style={{ width: 18, height: 18 }}
               />
-              <span>Company booking — bill to a company with GSTIN</span>
+              <span>
+                <strong>Company GSTIN on this F&B bill</strong>
+                <span className="muted" style={{ display: "block", fontSize: "0.8rem", fontWeight: 500 }}>
+                  Same as room invoices — prints Buyer GSTIN for input credit
+                </span>
+              </span>
             </label>
           </div>
           {isB2b ? (

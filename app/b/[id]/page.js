@@ -45,9 +45,19 @@ export default async function PublicBillPage({ params }) {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
             <div>
               <div className="muted" style={{ fontSize: "0.75rem", textTransform: "uppercase" }}>
-                Guest
+                {bill.buyer_company ? "Buyer (Bill to)" : "Guest"}
               </div>
-              <strong>{bill.guest_name}</strong>
+              <strong>{bill.buyer_company || bill.guest_name}</strong>
+              {bill.buyer_gstin ? (
+                <div style={{ fontWeight: 700, marginTop: 2, fontSize: "0.9rem" }}>
+                  GSTIN/UIN: {bill.buyer_gstin}
+                </div>
+              ) : null}
+              {bill.buyer_company && bill.guest_name ? (
+                <div className="muted" style={{ fontSize: "0.85rem" }}>
+                  Guest: {bill.guest_name}
+                </div>
+              ) : null}
             </div>
             <div>
               <div className="muted" style={{ fontSize: "0.75rem", textTransform: "uppercase" }}>
