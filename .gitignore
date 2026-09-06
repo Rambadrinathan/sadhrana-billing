@@ -18,3 +18,5 @@ docs/*.docx
 docs/bills-backup-*.json
 
 .env.vercel.pull
+
+tmp-commission-pdfs/
