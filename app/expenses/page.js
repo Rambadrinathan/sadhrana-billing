@@ -265,6 +265,25 @@ export default function ExpensesPage() {
                     flexWrap: "wrap",
                   }}
                 >
+                  {r.category === "commission" ? (
+                    <a
+                      href={`/api/expenses/${r.id}/pdf`}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{
+                        padding: "7px 14px",
+                        borderRadius: 6,
+                        border: "1.5px solid #C2562A",
+                        background: "#FDF3EC",
+                        color: "#C2562A",
+                        fontSize: "0.85rem",
+                        fontWeight: 700,
+                        textDecoration: "none",
+                      }}
+                    >
+                      📄 Settlement PDF
+                    </a>
+                  ) : null}
                   <button
                     type="button"
                     onClick={() => toggleLines(r.id)}

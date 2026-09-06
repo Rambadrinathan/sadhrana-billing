@@ -213,6 +213,9 @@ export default function HomePage() {
             <Link href="/expenses" className="btn btn-secondary" style={{ textAlign: "center" }}>
               Expenses
             </Link>
+            <Link href="/commission" className="btn btn-secondary" style={{ textAlign: "center" }}>
+              Commission
+            </Link>
             <Link href="/guests" className="btn btn-secondary" style={{ textAlign: "center" }}>
               Guests
             </Link>
@@ -265,6 +268,26 @@ export default function HomePage() {
               </div>
               <p className="muted" style={{ margin: "6px 0 0", fontSize: "0.9rem" }}>
                 Photo of a voucher or supplier bill · not a guest invoice
+              </p>
+            </Link>
+
+            <Link
+              href="/commission"
+              className="card"
+              style={{
+                display: "block",
+                marginBottom: 12,
+                background: "#FDF3EC",
+                border: "2px solid #C2562A",
+                textDecoration: "none",
+                color: "inherit",
+              }}
+            >
+              <div style={{ fontWeight: 800, fontSize: "1.1rem", color: "#C2562A" }}>
+                💸 COMMISSION — pay an agent
+              </div>
+              <p className="muted" style={{ margin: "6px 0 0", fontSize: "0.9rem" }}>
+                Inclusive GST amount · settlement PDF · money out (not guest bill)
               </p>
             </Link>
 
