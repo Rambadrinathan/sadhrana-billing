@@ -16,3 +16,5 @@ tmp-bamboo-house/
 docs/test-estimate.pdf
 docs/*.docx
 docs/bills-backup-*.json
+
+.env.vercel.pull
