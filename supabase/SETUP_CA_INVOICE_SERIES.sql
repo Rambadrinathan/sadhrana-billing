@@ -38,6 +38,9 @@ begin
 end;
 $$;
 
+-- Drop legacy overloads that still reference ambiguous "fy"
+drop function if exists next_bill_no_for(text);
+
 create or replace function next_bill_no_for(p_kind text)
 returns text
 language plpgsql
@@ -62,16 +65,15 @@ begin
     floor_n := 30;  -- CA VJD/RS/26_27/030
   end if;
 
-  -- Ensure a row exists at the CA floor before incrementing.
-  insert into bill_series_counters (kind, fy, last_n)
+  insert into bill_series_counters as c (kind, fy, last_n)
   values (k, fy_label, floor_n)
   on conflict (kind, fy) do nothing;
 
-  update bill_series_counters
-    set last_n = bill_series_counters.last_n + 1
-    where bill_series_counters.kind = k
-      and bill_series_counters.fy = fy_label
-    returning bill_series_counters.last_n into n;
+  update bill_series_counters as c
+    set last_n = c.last_n + 1
+    where c.kind = k
+      and c.fy = fy_label
+    returning c.last_n into n;
 
   if k = 'accommodation' then
     return 'VJD/' || fy_label || '/' || lpad(n::text, 3, '0');
