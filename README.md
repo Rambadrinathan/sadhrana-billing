@@ -91,6 +91,11 @@ After Deepak sends the real menu, edit `catalog_items` in Supabase Table Editor.
 - OTA / channel manager / full PMS
 - Inventory / kitchen KOT
 
-## Bill numbers
+## Bill numbers (CA series)
 
-`SB-2026-0001` … allocated by `next_bill_no()` in Postgres.
+| Kind | Format | Continues after |
+|------|--------|-----------------|
+| Stay / Room | `VJD/2026_27/NNN` | `035` → next `036` |
+| F&B | `VJD/RS/26_27/NNN` | `030` → next `031` |
+
+Allocated by `allocateBillNo()` in `lib/bill-no.js` (optional atomic RPC from `supabase/SETUP_CA_INVOICE_SERIES.sql`). See `docs/INVOICE_SERIES.md`.

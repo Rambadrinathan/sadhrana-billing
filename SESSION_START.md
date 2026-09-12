@@ -24,7 +24,7 @@
 | **GSTIN** | `06AAPFV9671F1ZJ` |
 | **Phone** | +91 92209 02135 |
 | **Email** | sadhranabagh@gmail.com |
-| **Invoice prefix** | `VJD/RS` |
+| **Invoice series (CA)** | Stay `VJD/2026_27/NNN` (after 035) · F&B `VJD/RS/26_27/NNN` (after 030) — see `docs/INVOICE_SERIES.md` |
 | **Admin PIN** | often `4826` (confirm Vercel `ADMIN_PIN` / `MANAGER_PIN`) |
 | **Villas** | Bamboo House · Beri House · Kerala House · The Library · Entire property buyout |
 
