@@ -45,7 +45,7 @@ as $$
 declare
   k text := lower(coalesce(nullif(trim(p_kind), ''), 'restaurant'));
   labels record;
-  fy text;
+  fy_label text;
   floor_n int;
   n int;
 begin
@@ -55,27 +55,28 @@ begin
 
   select * into labels from indian_fy_labels();
   if k = 'accommodation' then
-    fy := labels.stay_fy;
+    fy_label := labels.stay_fy;
     floor_n := 35;  -- CA VJD/2026_27/035
   else
-    fy := labels.fnb_fy;
+    fy_label := labels.fnb_fy;
     floor_n := 30;  -- CA VJD/RS/26_27/030
   end if;
 
   -- Ensure a row exists at the CA floor before incrementing.
   insert into bill_series_counters (kind, fy, last_n)
-  values (k, fy, floor_n)
+  values (k, fy_label, floor_n)
   on conflict (kind, fy) do nothing;
 
   update bill_series_counters
-    set last_n = last_n + 1
-    where kind = k and fy = fy
-    returning last_n into n;
+    set last_n = bill_series_counters.last_n + 1
+    where bill_series_counters.kind = k
+      and bill_series_counters.fy = fy_label
+    returning bill_series_counters.last_n into n;
 
   if k = 'accommodation' then
-    return 'VJD/' || fy || '/' || lpad(n::text, 3, '0');
+    return 'VJD/' || fy_label || '/' || lpad(n::text, 3, '0');
   else
-    return 'VJD/RS/' || fy || '/' || lpad(n::text, 3, '0');
+    return 'VJD/RS/' || fy_label || '/' || lpad(n::text, 3, '0');
   end if;
 end;
 $$;
