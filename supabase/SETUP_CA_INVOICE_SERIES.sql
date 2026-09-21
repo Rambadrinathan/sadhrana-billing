@@ -16,9 +16,11 @@ comment on table bill_series_counters is
   'Per-supply invoice serials aligned to CA Tally series (VJD / VJD/RS).';
 
 -- Floors = last numbers CA already issued. GREATEST avoids going backwards.
+-- F&B floor 29 → first/next issue is 030 (CA series starts at 030).
+-- Stay floor tracks highest VJD/ used (consulting 035–036 etc.).
 insert into bill_series_counters (kind, fy, last_n) values
-  ('accommodation', '2026_27', 35),
-  ('restaurant', '26_27', 30)
+  ('accommodation', '2026_27', 36),
+  ('restaurant', '26_27', 29)
 on conflict (kind, fy) do update
   set last_n = greatest(bill_series_counters.last_n, excluded.last_n);
 
@@ -59,10 +61,10 @@ begin
   select * into labels from indian_fy_labels();
   if k = 'accommodation' then
     fy_label := labels.stay_fy;
-    floor_n := 35;  -- CA VJD/2026_27/035
+    floor_n := 36;
   else
     fy_label := labels.fnb_fy;
-    floor_n := 30;  -- CA VJD/RS/26_27/030
+    floor_n := 29;  -- so first F&B is VJD/RS/26_27/030
   end if;
 
   insert into bill_series_counters as c (kind, fy, last_n)

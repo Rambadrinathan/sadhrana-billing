@@ -3,10 +3,10 @@
 **Source:** Chartered accountant, Sep 2026  
 **Rule:** Do not invent a different format. Continue the CA’s serials.
 
-| Kind | Format | CA last issued | Next app issue |
-|------|--------|----------------|----------------|
-| **Stay / Room** | `VJD/2026_27/NNN` | `VJD/2026_27/035` | `VJD/2026_27/036` |
-| **F&B** | `VJD/RS/26_27/NNN` | `VJD/RS/26_27/030` | `VJD/RS/26_27/031` |
+| Kind | Format | Notes | Next app issue |
+|------|--------|-------|----------------|
+| **Stay / Room** | `VJD/2026_27/NNN` | 035–036 used (consulting on same VJD series) | continues after highest used |
+| **F&B** | `VJD/RS/26_27/NNN` | CA series starts at **030** (first bill = 030, not 031) | after 030 → `031` |
 
 - FY segment uses **underscores** (`2026_27`, `26_27`), not hyphens.
 - Stay uses the **full** start year; F&B uses the **two-digit** start year — match CA paper.
