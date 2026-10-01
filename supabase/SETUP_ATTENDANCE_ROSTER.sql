@@ -1,6 +1,8 @@
 -- ============================================================
 -- ROSTER IS LOCKED. The Sadhrana Bagh team is exactly these 8:
---   Madan, Nikhil, Abhishek, Gunesh, Binod, Renu, Manisha, Munish
+--   Madan, Nikhil, Deepak, Gunesh, Binod, Renu, Manisha, Munish
+-- Abhishek left the team. His row stays (inactive) so past attendance
+-- remains under his name. Deepak takes that place on the board.
 -- Do NOT add names here. Ram, 2026-08-04: "DO NOT add anyone else".
 --
 -- On 2026-08-04 a KarmYog Vatika seed was run against THIS database
@@ -47,7 +49,7 @@ create unique index if not exists staff_name_uidx on staff (lower(name));
 insert into staff (name, active, sort_order) values
   ('Madan',    true, 10),
   ('Nikhil',   true, 20),
-  ('Abhishek', true, 30),
+  ('Deepak',   true, 30),
   ('Gunesh',   true, 40),
   ('Binod',    true, 50),
   ('Renu',     true, 60),
@@ -57,3 +59,6 @@ on conflict (lower(name)) do update
 
 -- Munish supervises; keep him on the roster but last
 update staff set active = true, sort_order = 90 where name = 'Munish';
+
+-- Abhishek is no longer on the team. Deactivate; do not delete.
+update staff set active = false where lower(name) = 'abhishek';
