@@ -8,7 +8,7 @@ const require = createRequire(import.meta.url);
 const { chromium } = require("playwright");
 
 const INVOICE = {
-  no: "PI/VJD/26-27/01",
+  no: "PI/VJD/26-27/46",
   date: new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "2-digit" }).replace(/ /g, "-"),
   customer: {
     name: "RAJAT SHARMA",
