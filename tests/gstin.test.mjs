@@ -11,6 +11,7 @@ import {
   normalizeGstin,
   gstinCheckDigit,
   isIntraStateSupply,
+  parseBuyerDetails,
 } from "../lib/gstin.js";
 
 let passed = 0;
@@ -70,5 +71,72 @@ console.log("-- tax treatment: always intra-state --");
 // on every out-of-state booking.
 t("out-of-state buyer is still CGST+SGST", () =>
   assert.equal(isIntraStateSupply(), true));
+
+console.log("-- company message: GSTIN on any line --");
+const rareAddress =
+  "7th Floor, 703, Palm Court, Mehrauli Gurugram Road, Palm Court, Sector 16, Gurugram, Gurugram, Haryana, 122007";
+t("the address line is 86 characters once punctuation is stripped", () =>
+  assert.equal(normalizeGstin(rareAddress).length, 86));
+t("06AARFR0683B1Z7 is a valid Haryana GSTIN", () => {
+  const v = validateGstin("06AARFR0683B1Z7");
+  assert.equal(v.ok, true);
+  assert.equal(v.stateName, "Haryana");
+});
+
+const munishOrder = parseBuyerDetails(
+  `Rare India\n${rareAddress}\n06AARFR0683B1Z7`
+);
+t("name, address, then GSTIN is accepted", () => assert.equal(munishOrder.ok, true));
+t("company is the first line", () =>
+  assert.equal(munishOrder.buyer_company, "Rare India"));
+t("GSTIN is read from the last line", () =>
+  assert.equal(munishOrder.buyer_gstin, "06AARFR0683B1Z7"));
+t("address is kept whole", () =>
+  assert.equal(munishOrder.buyer_address, rareAddress));
+t("that message is not reported as 86 characters", () =>
+  assert.equal(String(munishOrder.error || "").includes("86"), false));
+
+const labelled = parseBuyerDetails(
+  "Rare India\n7th floor ,703,Palm Court,MG Road Gurgaon\nGst no:06AARFR0683B1Z7"
+);
+t("a Gst no: label on the number still parses", () => {
+  assert.equal(labelled.ok, true);
+  assert.equal(labelled.buyer_gstin, "06AARFR0683B1Z7");
+  assert.equal(labelled.buyer_company, "Rare India");
+});
+
+const documented = parseBuyerDetails(
+  "Rare India\n06AARFR0683B1Z7\n" + rareAddress
+);
+t("name, GSTIN, then address still works", () => {
+  assert.equal(documented.ok, true);
+  assert.equal(documented.buyer_gstin, "06AARFR0683B1Z7");
+  assert.equal(documented.buyer_address, rareAddress);
+});
+
+const piped = parseBuyerDetails(
+  "Rare India | 06AARFR0683B1Z7 | Palm Court, Gurugram"
+);
+t("pipe form still works", () => {
+  assert.equal(piped.ok, true);
+  assert.equal(piped.buyer_company, "Rare India");
+  assert.equal(piped.buyer_gstin, "06AARFR0683B1Z7");
+  assert.equal(piped.buyer_address, "Palm Court, Gurugram");
+});
+
+const onlyNumber = parseBuyerDetails("06AARFR0683B1Z7");
+t("GSTIN alone still asks for the company name", () => {
+  assert.equal(onlyNumber.ok, false);
+  assert.match(onlyNumber.error, /company name/i);
+});
+
+const addressOnly = parseBuyerDetails(
+  "Rare\n7th floor 703 palm court, sector 16,Gurgaon, Haryana"
+);
+t("an address is not measured as the GSTIN", () => {
+  assert.equal(addressOnly.ok, false);
+  assert.equal(addressOnly.error.includes("42"), false);
+  assert.match(addressOnly.error, /GSTIN/i);
+});
 
 console.log("\n" + passed + " passed");
